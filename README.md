@@ -78,27 +78,39 @@ graph LR
 
 ```bash
 # Clone this repo (or copy to your workspace)
+
 cd golden-image
 
 # Copy the example config
+
 cp terraform.tfvars.example terraform.tfvars
 
 # Edit for your environment
+
 # - Point to your proxy-cache/mirror URLs
+
 # - Set your Harvester namespace
+
 # - Add private CA certificate
+
 # - Optional: add SSH keys for debug access to the builder VM
+
 vi terraform.tfvars
 
 # Build the golden image (full lifecycle: create → wait → import → cleanup)
+
 # Takes 10-20 minutes depending on builder VM size and mirror performance
+
 ./build.sh build
 
 # List existing golden images
+
 ./build.sh list
 
 # When done, reference the image in your cluster Terraform
+
 # (See "Integration with RKE2 Cluster" below)
+
 ```
 
 ## Configuration
@@ -135,11 +147,13 @@ builder_disk_size = "30Gi"
 image_name_prefix = "rke2-rocky9-golden"
 
 # Your proxy-cache URLs (no public internet)
+
 rocky_image_url = "https://yum.example.com/rocky/9/images/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
 rocky_repo_url  = "https://yum.example.com"
 rke2_repo_url   = "https://yum.example.com/rke2/latest"
 
 # Private CA certificate (required for HTTPS proxy-cache trust)
+
 private_ca_pem = <<-EOT
 -----BEGIN CERTIFICATE-----
 MIIDXTCCAkWgAwIBAgIJAK1234567890AB...
@@ -151,6 +165,7 @@ EOT
 ## Commands
 
 ### `./build.sh build`
+
 Full lifecycle: create utility VM → download and bake image → import to Harvester → cleanup.
 
 Output:
@@ -172,6 +187,7 @@ To use this image in your cluster, set in cluster/terraform.tfvars:
 ```
 
 ### `./build.sh list`
+
 Show all golden images in your Harvester namespace with size and age.
 
 ```
@@ -183,14 +199,17 @@ rke2-rocky9-golden-20260228          rke2-rocky9-golden-20260228      1.2Gi   10
 ```
 
 ### `./build.sh delete <image-name>`
+
 Delete an old golden image from Harvester.
 
 ```bash
 ./build.sh delete rke2-rocky9-golden-20260228
 # Image 'rke2-rocky9-golden-20260228' deleted
+
 ```
 
 ### `./build.sh destroy`
+
 Manual cleanup if the build fails mid-way. Destroys the utility VM and base image without waiting.
 
 ```bash
@@ -203,6 +222,7 @@ Once your golden image is built, reference it in your cluster Terraform:
 
 ```hcl
 # In cluster/terraform.tfvars or cluster/variables.tf
+
 golden_image_name = "rke2-rocky9-golden-20260301"
 ```
 
@@ -253,22 +273,26 @@ These are shared between the golden image builder and the cluster Terraform.
 ## Security Considerations
 
 ### TLS and Certificate Verification
+
 - All connections to your proxy-cache/mirror use HTTPS with private CA verification
 - The private CA certificate is baked into the golden image
 - Future RKE2 nodes automatically trust internal registries and mirrors
 
 ### Airgap Enforcement
+
 - Iptables rules in the golden image restrict outbound traffic to RFC1918 private networks + DNS/NTP
 - No accidental public internet leaks from cluster nodes
 - Perfect for regulated or air-gapped environments
 
 ### Secret Hygiene
+
 - SSH keys for the utility VM are **not** baked into the golden image
 - They only exist on the temporary builder VM (destroyed after build)
 - Private CA certificates **are** baked in (required for node operation)
 - Terraform state contains no secrets (stored in Kubernetes backend, not committed to git)
 
 ### SELinux
+
 - SELinux is re-enabled in the golden image
 - rke2-selinux package is installed for policy enforcement
 - Dracut rebuilds initramfs with SELinux support
@@ -276,6 +300,7 @@ These are shared between the golden image builder and the cluster Terraform.
 ## Troubleshooting
 
 ### Build hangs waiting for image import
+
 Check Harvester storage capacity and network:
 ```bash
 kubectl -n rke2-prod get virtualmachineimages rke2-rocky9-golden-20260301
@@ -283,14 +308,17 @@ kubectl -n rke2-prod describe virtualmachineimages rke2-rocky9-golden-20260301
 ```
 
 ### SSH to builder VM for debug (if build fails)
+
 The script outputs the utility VM IP. If you added SSH keys to `terraform.tfvars`:
 ```bash
 # From a host on the Harvester VM network
+
 ssh rocky@<utility-vm-ip>
 cat /var/log/build-golden.log
 ```
 
 ### Out of disk space on builder VM
+
 Increase `builder_disk_size` in terraform.tfvars (default 30Gi). Each build needs:
 - ~1.2 GB for downloaded Rocky 9 qcow2
 - ~1.2 GB for the customized golden qcow2
@@ -298,9 +326,11 @@ Increase `builder_disk_size` in terraform.tfvars (default 30Gi). Each build need
 - ~5 GB buffer
 
 ### Package installation failures
+
 Verify your proxy-cache is serving the repos correctly:
 ```bash
 # From any node on the cluster
+
 curl -kv https://yum.example.com/rocky/9/BaseOS/x86_64/os/
 ```
 
