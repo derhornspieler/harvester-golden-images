@@ -9,3 +9,4 @@ harvester-cloud-provider-kubeconfig
 *.tfstate.*
 *.tfplan
 *.swp
+.claude/
