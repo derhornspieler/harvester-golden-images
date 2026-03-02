@@ -1,3 +1,5 @@
+![CI](https://github.com/derhornspieler/harvester-rke2-golden-image/actions/workflows/ci.yml/badge.svg)
+
 # Harvester RKE2 Golden Image Builder
 
 **Pre-bake Rocky 9 QCOW2 images for RKE2 Kubernetes nodes on Harvester HCI — reproducible, airgap-ready, with static node configuration baked in.**
