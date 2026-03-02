@@ -169,12 +169,14 @@ EOT
 Full lifecycle: create utility VM → download and bake image → import to Harvester → cleanup.
 
 Output:
+
 - Prints the golden image name (e.g., `rke2-rocky9-golden-20260301`)
 - Shows the time elapsed
 - Instructs you to reference the image in cluster Terraform
 
 Example output:
-```
+
+```text
 ============================================================
   Golden Image Build Complete
 ============================================================
@@ -190,7 +192,7 @@ To use this image in your cluster, set in cluster/terraform.tfvars:
 
 Show all golden images in your Harvester namespace with size and age.
 
-```
+```text
 Golden images in namespace 'rke2-prod':
 
 NAME                                 DISPLAY                          SIZE    PROGRESS  AGE
@@ -229,6 +231,7 @@ golden_image_name = "rke2-rocky9-golden-20260301"
 The cluster deployment will use this image for all new RKE2 nodes, replacing the default Rocky 9 GenericCloud base image.
 
 **One-time setup**: The first time you build a golden image, you also need:
+
 - `private_ca_pem` — same certificate chain used in the golden image builder
 - `bootstrap_registry` — your proxy-cache registry (e.g., `yum.example.com`)
 
@@ -302,6 +305,7 @@ These are shared between the golden image builder and the cluster Terraform.
 ### Build hangs waiting for image import
 
 Check Harvester storage capacity and network:
+
 ```bash
 kubectl -n rke2-prod get virtualmachineimages rke2-rocky9-golden-20260301
 kubectl -n rke2-prod describe virtualmachineimages rke2-rocky9-golden-20260301
@@ -310,6 +314,7 @@ kubectl -n rke2-prod describe virtualmachineimages rke2-rocky9-golden-20260301
 ### SSH to builder VM for debug (if build fails)
 
 The script outputs the utility VM IP. If you added SSH keys to `terraform.tfvars`:
+
 ```bash
 # From a host on the Harvester VM network
 
@@ -320,6 +325,7 @@ cat /var/log/build-golden.log
 ### Out of disk space on builder VM
 
 Increase `builder_disk_size` in terraform.tfvars (default 30Gi). Each build needs:
+
 - ~1.2 GB for downloaded Rocky 9 qcow2
 - ~1.2 GB for the customized golden qcow2
 - ~3-5 GB for libguestfs temporary files
@@ -328,6 +334,7 @@ Increase `builder_disk_size` in terraform.tfvars (default 30Gi). Each build need
 ### Package installation failures
 
 Verify your proxy-cache is serving the repos correctly:
+
 ```bash
 # From any node on the cluster
 
@@ -350,6 +357,7 @@ Apache License 2.0 — See LICENSE file for details.
 ## Contributing
 
 This project is part of the harvester-rke2-platform ecosystem. For issues or PRs:
+
 - Ensure all `.sh` files pass `shellcheck`
 - Test Terraform changes with `terraform plan` before submitting
 - Update this README if you add new variables or commands
