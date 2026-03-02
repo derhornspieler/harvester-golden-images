@@ -1,6 +1,10 @@
 # Harvester RKE2 Golden Image Builder
 
 ![CI](https://github.com/derhornspieler/harvester-rke2-golden-image/actions/workflows/ci.yml/badge.svg)
+![Harvester](https://img.shields.io/badge/Harvester-v1.4.1-00a580)
+![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.5.0-844fba)
+![Harvester Provider](https://img.shields.io/badge/harvester%2Fharvester-~%3E0.6-844fba)
+![Kubernetes Provider](https://img.shields.io/badge/hashicorp%2Fkubernetes-~%3E2.36-844fba)
 
 **Pre-bake Rocky 9 QCOW2 images for RKE2 Kubernetes nodes on Harvester HCI — reproducible, airgap-ready, with static node configuration baked in.**
 
