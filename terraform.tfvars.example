@@ -1,0 +1,34 @@
+# =============================================================================
+# Golden Image Builder — Terraform Variables
+# =============================================================================
+# Copy to terraform.tfvars and adjust values for your environment.
+# All repos go through your proxy-cache or private mirror.
+
+# --- Harvester ---
+harvester_kubeconfig_path   = "./kubeconfig-harvester.yaml"
+vm_namespace                = "rke2-prod"
+harvester_network_name      = "vm-network"
+harvester_network_namespace = "default"
+
+# --- Builder VM (temporary, destroyed after build) ---
+builder_cpu       = 4
+builder_memory    = "4Gi"
+builder_disk_size = "30Gi"
+image_name_prefix = "rke2-rocky9-golden"
+
+# --- Debug (optional, keys are NOT baked into golden image) ---
+# ssh_authorized_keys = ["ssh-ed25519 AAAA... user@host"]
+
+# --- Base Image (from proxy-cache or private mirror) ---
+rocky_image_url = "https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+
+# --- Package Repositories (proxy-cache or private mirror) ---
+rocky_repo_url = "https://yum.example.com"
+rke2_repo_url  = "https://yum.example.com/rke2/latest"
+
+# --- TLS CA (required — PEM-encoded cert chain for proxy-cache/mirror) ---
+private_ca_pem = <<-EOT
+-----BEGIN CERTIFICATE-----
+<your CA certificate here>
+-----END CERTIFICATE-----
+EOT

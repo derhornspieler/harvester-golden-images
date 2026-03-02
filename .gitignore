@@ -1,0 +1,11 @@
+terraform.tfvars
+kubeconfig-*.yaml
+harvester-cloud-provider-kubeconfig
+*.pem
+*.key
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.swp
