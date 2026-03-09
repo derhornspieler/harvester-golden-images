@@ -3,3 +3,4 @@ config:
     line_length: 500
   no-duplicate-heading: false
   no-inline-html: false
+  fenced-code-language: false
