@@ -18,7 +18,7 @@ locals {
       oscap_package    = "openscap-scanner"
       datastream       = "/usr/share/xml/scap/ssg/content/ssg-rl9-ds.xml"
       alt_datastreams  = ["ssg-cs9-ds.xml", "ssg-rhel9-ds.xml"]
-      cis_profile_fmt  = "xccdf_org.ssgproject.content_profile_cis_%s_%s"  # type, level
+      cis_profile_fmt  = "xccdf_org.ssgproject.content_profile_cis_%s_%s" # type, level
       extra_packages   = "policycoreutils-python-utils,audit,cloud-init,cloud-utils-growpart"
       ca_trust_dir     = "/etc/pki/ca-trust/source/anchors"
       ca_trust_cmd     = "update-ca-trust"
@@ -35,7 +35,7 @@ locals {
       oscap_package    = "openscap-scanner"
       datastream       = "/usr/share/xml/scap/ssg/content/ssg-debian12-ds.xml"
       alt_datastreams  = ["ssg-debian11-ds.xml"]
-      cis_profile_fmt  = "xccdf_org.ssgproject.content_profile_cis_level%s_%s"  # level_number, type
+      cis_profile_fmt  = "xccdf_org.ssgproject.content_profile_cis_level%s_%s" # level_number, type
       extra_packages   = "apt-transport-https,ca-certificates,cloud-init,cloud-guest-utils,auditd"
       ca_trust_dir     = "/usr/local/share/ca-certificates"
       ca_trust_cmd     = "/usr/sbin/update-ca-certificates"
@@ -52,7 +52,7 @@ locals {
       oscap_package    = "openscap-scanner"
       datastream       = "/usr/share/xml/scap/ssg/content/ssg-ubuntu2404-ds.xml"
       alt_datastreams  = ["ssg-ubuntu2204-ds.xml"]
-      cis_profile_fmt  = "xccdf_org.ssgproject.content_profile_cis_level%s_%s"  # level_number, type
+      cis_profile_fmt  = "xccdf_org.ssgproject.content_profile_cis_level%s_%s" # level_number, type
       extra_packages   = "apt-transport-https,ca-certificates,cloud-init,cloud-guest-utils,auditd"
       ca_trust_dir     = "/usr/local/share/ca-certificates"
       ca_trust_cmd     = "/usr/sbin/update-ca-certificates"
@@ -69,7 +69,7 @@ locals {
       oscap_package    = "openscap-scanner"
       datastream       = "/usr/share/xml/scap/ssg/content/ssg-fedora-ds.xml"
       alt_datastreams  = []
-      cis_profile_fmt  = "xccdf_org.ssgproject.content_profile_cis_%s_%s"  # type, level
+      cis_profile_fmt  = "xccdf_org.ssgproject.content_profile_cis_%s_%s" # type, level
       extra_packages   = "policycoreutils-python-utils,audit,cloud-init,cloud-utils-growpart"
       ca_trust_dir     = "/etc/pki/ca-trust/source/anchors"
       ca_trust_cmd     = "update-ca-trust"

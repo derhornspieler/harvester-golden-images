@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          body: |
+            ## Golden Image Builder Release
+
+            ### Supported Distros
+            | Distro | Cloud Image |
+            |--------|------------|
+            | Rocky Linux 9 | `Rocky-9-GenericCloud-Base.latest.x86_64.qcow2` |
+            | Debian 12 (Bookworm) | `debian-12-generic-amd64.qcow2` |
+            | Ubuntu 24.04 (Noble) | `ubuntu-24.04-server-cloudimg-amd64.img` |
+            | Fedora 42 | `Fedora-Cloud-Base-Generic-42-1.1.x86_64.qcow2` |
+
+            ### Versions
+            - Terraform: `1.14.5`
+            - Provider `harvester/harvester`: `0.6.7`
+            - Provider `hashicorp/kubernetes`: `2.36.0`
+
+            ### Usage
+            ```bash
+            cp terraform.tfvars.example terraform.tfvars
+            # Edit terraform.tfvars with your values
+            ./build.sh build
+            ```

@@ -5,14 +5,23 @@
 .terraform.lock.hcl
 crash.log
 
-# Sensitive (root tfvars has CA cert; distro tfvars are safe to commit)
+# Sensitive — only .example files are committed
 terraform.tfvars
+distros/*.tfvars
+!distros/*.tfvars.example
 kubeconfig-harvester.yaml
 *.pem
 *.key
 
 # Build artifacts
 reports/
+
+# Claude Code / AI
+.claude/
+CLAUDE.md
+memory/
+*.plan
+*.plan.md
 
 # OS
 .DS_Store
