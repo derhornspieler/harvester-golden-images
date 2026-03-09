@@ -1,0 +1,13 @@
+# Gitleaks configuration
+# CA certificates are public trust anchors, not secrets.
+# The private CA PEM in tfvars.example files is a template placeholder.
+
+[allowlist]
+  description = "Allow CA certificate placeholders and public keys"
+  paths = [
+    '''.*\.tfvars\.example$''',
+    '''.*\.md$''',
+  ]
+  commits = [
+    "57d235cd628f4193684c20f62a3afaf9b3391a7e",
+  ]
