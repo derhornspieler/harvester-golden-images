@@ -1,20 +1,20 @@
 # Terraform
-.terraform/
+**/.terraform/
 *.tfstate
 *.tfstate.backup
 .terraform.lock.hcl
 crash.log
 
 # Sensitive — only .example files are committed
-terraform.tfvars
-distros/*.tfvars
-!distros/*.tfvars.example
-kubeconfig-harvester.yaml
+**/terraform.tfvars
+**/distros/*.tfvars
+!**/distros/*.tfvars.example
+**/kubeconfig-harvester.yaml
 *.pem
 *.key
 
 # Build artifacts
-reports/
+**/reports/
 
 # Claude Code / AI
 .claude/
