@@ -103,10 +103,6 @@ jobs:
         uses: DavidAnson/markdownlint-cli2-action@v19
         with:
           globs: "**/*.md"
-          config: >
-            {"line-length": {"line_length": 500},
-             "no-duplicate-heading": false,
-             "no-inline-html": false}
 
   yamllint:
     name: YAML Lint
