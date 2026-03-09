@@ -1,0 +1,48 @@
+# =============================================================================
+# Multi-Distro CIS-Hardened Golden Image — Terraform Variables
+# =============================================================================
+# Supported distros: rocky9, debian12, ubuntu2404, fedora42
+#
+# Quick start:
+#   cp terraform.tfvars.example terraform.tfvars
+#   # Edit values below
+#   ./build.sh build
+#
+# Per-distro builds:
+#   ./build.sh build -f distros/debian12.tfvars
+
+# --- Distro ---
+distro = "rocky9"   # rocky9 | debian12 | ubuntu2404 | fedora42
+
+# --- Harvester ---
+harvester_kubeconfig_path   = "./kubeconfig-harvester.yaml"
+vm_namespace                = "rke2-prod"
+harvester_network_name      = "vm-network"
+harvester_network_namespace = "default"
+
+# --- CIS Hardening ---
+cis_level = "l1"       # l1 | l2
+cis_type  = "server"   # server | workstation
+# cis_tailoring_file = "cis-tailoring.xml"  # Optional XCCDF tailoring
+
+# --- Image name (auto-generated if empty: <distro>-cis-golden) ---
+# image_name_prefix = ""
+
+# --- Builder VM image (always Rocky 9 — leave empty for upstream default) ---
+# builder_image_url = "https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+
+# --- Cloud image (leave empty to use upstream default for the distro) ---
+# cloud_image_url = "https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+
+# --- Package mirror (leave empty to use upstream repos) ---
+# repo_mirror_url = "https://yum.example.com"
+
+# --- Debug ---
+# ssh_authorized_keys = ["ssh-ed25519 AAAA... user@host"]
+
+# --- TLS CA (required if using private mirror with self-signed certs) ---
+# private_ca_pem = <<-EOT
+# -----BEGIN CERTIFICATE-----
+# <your CA certificate here>
+# -----END CERTIFICATE-----
+# EOT

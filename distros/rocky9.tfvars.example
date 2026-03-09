@@ -1,0 +1,30 @@
+# Rocky Linux 9 — CIS L1 Server
+distro = "rocky9"
+
+harvester_kubeconfig_path   = "./kubeconfig-harvester.yaml"
+vm_namespace                = "<YOUR_NAMESPACE>"
+harvester_network_name      = "vm-network"
+harvester_network_namespace = "default"
+
+cis_level = "l1"
+cis_type  = "server"
+
+# Builder VM image (always Rocky 9 — leave empty for upstream default)
+# builder_image_url = "https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+
+# Cloud image (leave empty to use upstream default)
+# cloud_image_url = "https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+
+# Package mirror (leave empty to use upstream repos)
+# repo_mirror_url = "https://yum.example.com"
+
+ssh_authorized_keys = [
+  # "ssh-ed25519 AAAA... user@host",
+]
+
+# TLS CA (required if using private mirror with self-signed certs)
+# private_ca_pem = <<-EOT
+# -----BEGIN CERTIFICATE-----
+# <your CA certificate here>
+# -----END CERTIFICATE-----
+# EOT
