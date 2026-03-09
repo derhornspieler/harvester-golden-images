@@ -20,24 +20,26 @@ jobs:
         with:
           generate_release_notes: true
           body: |
-            ## Golden Image Builder Release
+            ## Harvester Golden Images Release
 
-            ### Supported Distros
-            | Distro | Cloud Image |
-            |--------|------------|
-            | Rocky Linux 9 | `Rocky-9-GenericCloud-Base.latest.x86_64.qcow2` |
-            | Debian 12 (Bookworm) | `debian-12-generic-amd64.qcow2` |
-            | Ubuntu 24.04 (Noble) | `ubuntu-24.04-server-cloudimg-amd64.img` |
-            | Fedora 42 | `Fedora-Cloud-Base-Generic-42-1.1.x86_64.qcow2` |
+            ### Image Types
+            | Image | Distros | Status |
+            |-------|---------|--------|
+            | CIS-Hardened | Rocky 9, Debian 12 | Production |
+            | CIS-Hardened | Ubuntu 24.04, Fedora 42 | Experimental |
+            | RKE2 Node | Rocky 9 | Production |
 
             ### Versions
-            - Terraform: `1.14.5`
+            - Terraform: `>= 1.5.0` (tested `1.14.5`)
             - Provider `harvester/harvester`: `0.6.7`
             - Provider `hashicorp/kubernetes`: `2.36.0`
 
             ### Usage
             ```bash
-            cp terraform.tfvars.example terraform.tfvars
-            # Edit terraform.tfvars with your values
-            ./build.sh build
+            # Build all production images
+            ./build.sh build all
+
+            # Or individually
+            ./build.sh build cis-rocky9
+            ./build.sh build rke2
             ```

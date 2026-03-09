@@ -1,12 +1,6 @@
 # Harvester RKE2 Golden Image Builder
 
-![CI](https://github.com/example-user/harvester-rke2-golden-image/actions/workflows/ci.yml/badge.svg)
-![Harvester](https://img.shields.io/badge/Harvester-v1.7.1-00a580)
-![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.5.0-844fba)
-![Harvester Provider](https://img.shields.io/badge/harvester%2Fharvester-~%3E0.6-844fba)
-![Kubernetes Provider](https://img.shields.io/badge/hashicorp%2Fkubernetes-~%3E2.36-844fba)
-
-**Pre-bake Rocky 9 QCOW2 images for RKE2 Kubernetes nodes on Harvester HCI — reproducible, airgap-ready, with static node configuration baked in.**
+**Pre-bake Rocky 9 QCOW2 images for RKE2 Kubernetes nodes on Harvester HCI -- reproducible, airgap-ready, with static node configuration baked in.**
 
 ## Overview
 
@@ -55,10 +49,10 @@ graph LR
 
 | Component | Details |
 |-----------|---------|
-| **Repositories** | RKE2 common + versioned repos (e.g., 1.34), Rocky 9 BaseOS/AppStream, EPEL — all via proxy-cache with private CA trust |
+| **Repositories** | RKE2 common + versioned repos (e.g., 1.34), Rocky 9 BaseOS/AppStream, EPEL -- all via proxy-cache with private CA trust |
 | **Essential packages** | qemu-guest-agent, iptables, iptables-services, container-selinux, policycoreutils-python-utils, audit, rke2-selinux |
 | **Firewall rules** | iptables rules with INPUT DROP (except k8s ports 22, 6443, 9345, etc.) and OUTPUT DROP with RFC1918 safety net + DNS/NTP |
-| **Network config** | ARP snooping protection (arp_ignore=1, arp_announce=2) — critical for dual-NIC worker nodes. NetworkManager dispatcher for policy routing on eth1 |
+| **Network config** | ARP snooping protection (arp_ignore=1, arp_announce=2) -- critical for dual-NIC worker nodes. NetworkManager dispatcher for policy routing on eth1 |
 | **Security hardening** | Private CA certificate chain installed. SELinux relabeled. Audit enabled. |
 | **Virtualization tuning** | Dracut configured for virtio drivers (virtio_blk, virtio_net, virtio_scsi, virtio_pci, virtio_console). Generic initramfs (not host-specific) for KubeVirt compatibility |
 | **Boot loader** | GRUB entries cleaned up (libguestfs contamination removed). net.ifnames=0 applied for predictable NIC naming |
@@ -81,40 +75,27 @@ graph LR
 ## Quick Start
 
 ```bash
-# Clone this repo (or copy to your workspace)
-
-cd golden-image
+cd harvester-golden-images/rke2
 
 # Copy the example config
-
 cp terraform.tfvars.example terraform.tfvars
 
 # Edit for your environment
-
 # - Point to your proxy-cache/mirror URLs
-
 # - Set your Harvester namespace
-
 # - Add private CA certificate
-
 # - Optional: add SSH keys for debug access to the builder VM
-
 vi terraform.tfvars
 
-# Build the golden image (full lifecycle: create → wait → import → cleanup)
-
+# Build the golden image (full lifecycle: create -> wait -> import -> cleanup)
 # Takes 10-20 minutes depending on builder VM size and mirror performance
-
 ./build.sh build
 
 # List existing golden images
-
 ./build.sh list
 
 # When done, reference the image in your cluster Terraform
-
 # (See "Integration with RKE2 Cluster" below)
-
 ```
 
 ## Configuration
@@ -151,13 +132,11 @@ builder_disk_size = "30Gi"
 image_name_prefix = "rke2-rocky9-golden"
 
 # Your proxy-cache URLs (no public internet)
-
 rocky_image_url = "https://yum.example.com/rocky/9/images/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
 rocky_repo_url  = "https://yum.example.com"
 rke2_repo_url   = "https://yum.example.com/rke2/latest"
 
 # Private CA certificate (required for HTTPS proxy-cache trust)
-
 private_ca_pem = <<-EOT
 -----BEGIN CERTIFICATE-----
 MIIDXTCCAkWgAwIBAgIJAK1234567890AB...
@@ -170,7 +149,7 @@ EOT
 
 ### `./build.sh build`
 
-Full lifecycle: create utility VM → download and bake image → import to Harvester → cleanup.
+Full lifecycle: create utility VM -> download and bake image -> import to Harvester -> cleanup.
 
 Output:
 
@@ -211,7 +190,6 @@ Delete an old golden image from Harvester.
 ```bash
 ./build.sh delete rke2-rocky9-golden-20260228
 # Image 'rke2-rocky9-golden-20260228' deleted
-
 ```
 
 ### `./build.sh destroy`
@@ -228,7 +206,6 @@ Once your golden image is built, reference it in your cluster Terraform:
 
 ```hcl
 # In cluster/terraform.tfvars or cluster/variables.tf
-
 golden_image_name = "rke2-rocky9-golden-20260301"
 ```
 
@@ -236,8 +213,8 @@ The cluster deployment will use this image for all new RKE2 nodes, replacing the
 
 **One-time setup**: The first time you build a golden image, you also need:
 
-- `private_ca_pem` — same certificate chain used in the golden image builder
-- `bootstrap_registry` — your proxy-cache registry (e.g., `yum.example.com`)
+- `private_ca_pem` -- same certificate chain used in the golden image builder
+- `bootstrap_registry` -- your proxy-cache registry (e.g., `yum.example.com`)
 
 These are shared between the golden image builder and the cluster Terraform.
 
@@ -321,7 +298,6 @@ The script outputs the utility VM IP. If you added SSH keys to `terraform.tfvars
 
 ```bash
 # From a host on the Harvester VM network
-
 ssh rocky@<utility-vm-ip>
 cat /var/log/build-golden.log
 ```
@@ -341,7 +317,6 @@ Verify your proxy-cache is serving the repos correctly:
 
 ```bash
 # From any node on the cluster
-
 curl -kv https://yum.example.com/rocky/9/BaseOS/x86_64/os/
 ```
 
@@ -356,11 +331,11 @@ If TLS fails, check that your `private_ca_pem` in terraform.tfvars is the comple
 
 ## License
 
-Apache License 2.0 — See LICENSE file for details.
+Apache License 2.0 -- See LICENSE file for details.
 
 ## Contributing
 
-This project is part of the harvester-rke2-platform ecosystem. For issues or PRs:
+This project is part of the harvester-golden-images monorepo. For issues or PRs:
 
 - Ensure all `.sh` files pass `shellcheck`
 - Test Terraform changes with `terraform plan` before submitting

@@ -13,6 +13,9 @@ jobs:
   terraform-validate:
     name: Terraform Validate
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dir: [cis, rke2]
     steps:
       - uses: actions/checkout@v4
 
@@ -22,12 +25,15 @@ jobs:
 
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
+        working-directory: ${{ matrix.dir }}
 
       - name: Terraform Init (validate only)
         run: terraform init -backend=false
+        working-directory: ${{ matrix.dir }}
 
       - name: Terraform Validate
         run: terraform validate
+        working-directory: ${{ matrix.dir }}
 
   shellcheck:
     name: ShellCheck
@@ -44,6 +50,9 @@ jobs:
   tflint:
     name: TFLint
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dir: [cis, rke2]
     steps:
       - uses: actions/checkout@v4
 
@@ -53,9 +62,11 @@ jobs:
 
       - name: Init TFLint
         run: tflint --init
+        working-directory: ${{ matrix.dir }}
 
       - name: Run TFLint
-        run: tflint --recursive
+        run: tflint
+        working-directory: ${{ matrix.dir }}
 
   security:
     name: Security Scan
@@ -82,6 +93,21 @@ jobs:
           soft_fail: true
           framework: terraform
 
+  markdownlint:
+    name: Markdown Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint Markdown
+        uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: "**/*.md"
+          config: >
+            {"line-length": {"line_length": 500},
+             "no-duplicate-heading": false,
+             "no-inline-html": false}
+
   yamllint:
     name: YAML Lint
     runs-on: ubuntu-latest
@@ -91,7 +117,7 @@ jobs:
       - name: Lint YAML files
         uses: ibiqlik/action-yamllint@v3
         with:
-          file_or_dir: templates/
+          file_or_dir: cis/templates/ rke2/templates/
           config_data: |
             extends: default
             rules:
