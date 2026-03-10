@@ -3,9 +3,9 @@
 # -----------------------------------------------------------------------------
 
 resource "harvester_image" "rocky9_base" {
-  name               = "golden-builder-rocky9-base"
+  name               = "rke2-builder-rocky9-base"
   namespace          = var.vm_namespace
-  display_name       = "golden-builder-rocky9-base"
+  display_name       = "rke2-builder-rocky9-base"
   source_type        = "download"
   url                = var.rocky_image_url
   storage_class_name = "harvester-longhorn"
