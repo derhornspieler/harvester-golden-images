@@ -11,6 +11,7 @@ crash.log
 !**/distros/*.tfvars.example
 **/kubeconfig-harvester.yaml
 *.pem
+!shared/aegis-root-ca.pem
 *.key
 
 # Build artifacts

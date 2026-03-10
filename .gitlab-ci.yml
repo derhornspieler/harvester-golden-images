@@ -26,6 +26,10 @@ workflow:
 variables:
   TF_VAR_vm_namespace: "rke2-prod"
   TF_VAR_harvester_kubeconfig_path: "/etc/harvester/kubeconfig-harvester.yaml"
+  TF_VAR_harvester_network_name: "vm-network"
+  TF_VAR_harvester_network_namespace: "default"
+  TF_VAR_builder_image_url: "https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+  TF_VAR_repo_mirror_url: "https://yum.example.com"
 
 # -----------------------------------------------------------------------------
 # Stage: detect — Diff upstream-versions.json to find which distros changed
@@ -96,6 +100,8 @@ build-cis-rocky9:
     - job: detect-changes
       artifacts: true
   timeout: 60m
+  variables:
+    TF_VAR_cloud_image_url: "https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
   script:
     - |
       set -euo pipefail
@@ -103,6 +109,7 @@ build-cis-rocky9:
         echo "Rocky 9 not changed — skipping"
         exit 0
       fi
+      export TF_VAR_private_ca_pem="$(cat shared/aegis-root-ca.pem)"
       export IMAGE_NAME_OVERRIDE="rocky-${ROCKY_VERSION}-cis-${IMAGE_DATE}"
       echo "Building CIS Rocky 9 as: ${IMAGE_NAME_OVERRIDE}"
       ./build.sh build cis-rocky9
@@ -115,6 +122,9 @@ build-cis-debian12:
     - job: detect-changes
       artifacts: true
   timeout: 60m
+  variables:
+    TF_VAR_repo_mirror_url: "https://apt.example.com"
+    TF_VAR_cloud_image_url: ""
   script:
     - |
       set -euo pipefail
@@ -122,6 +132,7 @@ build-cis-debian12:
         echo "Debian 12 not changed — skipping"
         exit 0
       fi
+      export TF_VAR_private_ca_pem="$(cat shared/aegis-root-ca.pem)"
       export IMAGE_NAME_OVERRIDE="debian-${DEBIAN_VERSION}-cis-${IMAGE_DATE}"
       echo "Building CIS Debian 12 as: ${IMAGE_NAME_OVERRIDE}"
       ./build.sh build cis-debian12
@@ -134,6 +145,10 @@ build-rke2:
     - job: detect-changes
       artifacts: true
   timeout: 60m
+  variables:
+    TF_VAR_rocky_image_url: "https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+    TF_VAR_rocky_repo_url: "https://yum.example.com"
+    TF_VAR_rke2_repo_url: "https://yum.example.com/rke2/latest"
   script:
     - |
       set -euo pipefail
@@ -141,6 +156,7 @@ build-rke2:
         echo "Rocky 9 not changed — skipping RKE2 build"
         exit 0
       fi
+      export TF_VAR_private_ca_pem="$(cat shared/aegis-root-ca.pem)"
       export IMAGE_NAME_OVERRIDE="rocky-${ROCKY_VERSION}-rke2-${IMAGE_DATE}"
       echo "Building RKE2 Rocky 9 as: ${IMAGE_NAME_OVERRIDE}"
       ./build.sh build rke2

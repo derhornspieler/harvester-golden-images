@@ -163,7 +163,14 @@ cmd_build() {
 
     if [[ "$builder" == "cis" ]]; then
       local tfvars="${CIS_TFVARS[$target]}"
-      "$script" build -f "$tfvars" || build_rc=$?
+      local tfvars_path="${SCRIPT_DIR}/cis/${tfvars}"
+      if [[ -f "$tfvars_path" ]]; then
+        "$script" build -f "$tfvars" || build_rc=$?
+      else
+        # CI mode: no tfvars file, set distro via env and rely on TF_VAR_ variables
+        local distro_name="${target#cis-}"
+        TF_VAR_distro="$distro_name" "$script" build || build_rc=$?
+      fi
     else
       "$script" build || build_rc=$?
     fi
