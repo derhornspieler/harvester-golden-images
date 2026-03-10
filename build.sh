@@ -27,6 +27,9 @@ set -euo pipefail
 #   ./build.sh list                      Show all golden images
 #   ./build.sh delete <name>             Delete a golden image
 #   ./build.sh destroy                   Manual cleanup (all sub-projects)
+#
+# Environment variables (set by CI pipeline):
+#   IMAGE_NAME_OVERRIDE    Full image name (e.g., rocky-9.7-cis-20260310)
 # =============================================================================
 
 # --- Colors & Logging ---

@@ -1,0 +1,201 @@
+# =============================================================================
+# GitLab CI — Golden Image Automated Build Pipeline
+# =============================================================================
+# Triggered when upstream-versions.json is updated (by Argo watcher).
+# Builds golden images with version-aware naming on a dedicated Rocky 9 runner.
+# =============================================================================
+
+stages:
+  - detect
+  - build
+  - tag
+  - cleanup
+
+# Only run this pipeline when upstream-versions.json changes on main
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
+      changes:
+        - upstream-versions.json
+    # Allow manual trigger
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+# -----------------------------------------------------------------------------
+# Stage: detect — Diff upstream-versions.json to find which distros changed
+# -----------------------------------------------------------------------------
+detect-changes:
+  stage: detect
+  tags:
+    - golden-image-builder
+  script:
+    - |
+      set -euo pipefail
+
+      IMAGE_DATE=$(date +%Y%m%d)
+      echo "IMAGE_DATE=${IMAGE_DATE}" >> detect.env
+
+      # Read current version info
+      ROCKY_VERSION=$(jq -r '.rocky9.version // ""' upstream-versions.json)
+      DEBIAN_VERSION=$(jq -r '.debian12.version // ""' upstream-versions.json)
+      echo "ROCKY_VERSION=${ROCKY_VERSION}" >> detect.env
+      echo "DEBIAN_VERSION=${DEBIAN_VERSION}" >> detect.env
+
+      # Determine what actually changed by comparing JSON fields with previous commit
+      BUILD_ROCKY9="false"
+      BUILD_DEBIAN12="false"
+
+      OLD_ROCKY_CHECKSUM=$(git show HEAD~1:upstream-versions.json 2>/dev/null | jq -r '.rocky9.checksum // ""' 2>/dev/null || echo "")
+      NEW_ROCKY_CHECKSUM=$(jq -r '.rocky9.checksum // ""' upstream-versions.json)
+      if [ "$OLD_ROCKY_CHECKSUM" != "$NEW_ROCKY_CHECKSUM" ]; then
+        BUILD_ROCKY9="true"
+        echo "Rocky 9 ${ROCKY_VERSION} — checksum changed, will build"
+      else
+        echo "Rocky 9 — no change detected"
+      fi
+
+      OLD_DEBIAN_CHECKSUM=$(git show HEAD~1:upstream-versions.json 2>/dev/null | jq -r '.debian12.checksum // ""' 2>/dev/null || echo "")
+      NEW_DEBIAN_CHECKSUM=$(jq -r '.debian12.checksum // ""' upstream-versions.json)
+      if [ "$OLD_DEBIAN_CHECKSUM" != "$NEW_DEBIAN_CHECKSUM" ]; then
+        BUILD_DEBIAN12="true"
+        echo "Debian 12 ${DEBIAN_VERSION} — checksum changed, will build"
+      else
+        echo "Debian 12 — no change detected"
+      fi
+
+      # On manual trigger, build everything that has version info
+      if [ "$CI_PIPELINE_SOURCE" = "web" ]; then
+        echo "Manual trigger — building all distros with version info"
+        [ -n "$ROCKY_VERSION" ] && BUILD_ROCKY9="true"
+        [ -n "$DEBIAN_VERSION" ] && BUILD_DEBIAN12="true"
+      fi
+
+      echo "BUILD_ROCKY9=${BUILD_ROCKY9}" >> detect.env
+      echo "BUILD_DEBIAN12=${BUILD_DEBIAN12}" >> detect.env
+  artifacts:
+    reports:
+      dotenv: detect.env
+
+# -----------------------------------------------------------------------------
+# Stage: build — Run golden image builds (conditional via script check)
+# -----------------------------------------------------------------------------
+# Note: Build jobs use script-level checks instead of rules:if for dotenv
+# variables, since rules:if evaluates before dotenv artifacts are loaded.
+
+build-cis-rocky9:
+  stage: build
+  tags:
+    - golden-image-builder
+  needs:
+    - job: detect-changes
+      artifacts: true
+  timeout: 60m
+  script:
+    - |
+      set -euo pipefail
+      if [ "${BUILD_ROCKY9}" != "true" ]; then
+        echo "Rocky 9 not changed — skipping"
+        exit 0
+      fi
+      export IMAGE_NAME_OVERRIDE="rocky-${ROCKY_VERSION}-cis-${IMAGE_DATE}"
+      echo "Building CIS Rocky 9 as: ${IMAGE_NAME_OVERRIDE}"
+      ./build.sh build cis-rocky9
+
+build-cis-debian12:
+  stage: build
+  tags:
+    - golden-image-builder
+  needs:
+    - job: detect-changes
+      artifacts: true
+  timeout: 60m
+  script:
+    - |
+      set -euo pipefail
+      if [ "${BUILD_DEBIAN12}" != "true" ]; then
+        echo "Debian 12 not changed — skipping"
+        exit 0
+      fi
+      export IMAGE_NAME_OVERRIDE="debian-${DEBIAN_VERSION}-cis-${IMAGE_DATE}"
+      echo "Building CIS Debian 12 as: ${IMAGE_NAME_OVERRIDE}"
+      ./build.sh build cis-debian12
+
+build-rke2:
+  stage: build
+  tags:
+    - golden-image-builder
+  needs:
+    - job: detect-changes
+      artifacts: true
+  timeout: 60m
+  script:
+    - |
+      set -euo pipefail
+      if [ "${BUILD_ROCKY9}" != "true" ]; then
+        echo "Rocky 9 not changed — skipping RKE2 build"
+        exit 0
+      fi
+      export IMAGE_NAME_OVERRIDE="rocky-${ROCKY_VERSION}-rke2-${IMAGE_DATE}"
+      echo "Building RKE2 Rocky 9 as: ${IMAGE_NAME_OVERRIDE}"
+      ./build.sh build rke2
+
+# -----------------------------------------------------------------------------
+# Stage: tag — Git-tag the build
+# -----------------------------------------------------------------------------
+tag-build:
+  stage: tag
+  tags:
+    - golden-image-builder
+  needs:
+    - job: detect-changes
+      artifacts: true
+    - job: build-cis-rocky9
+    - job: build-cis-debian12
+    - job: build-rke2
+  script:
+    - |
+      set -euo pipefail
+
+      # Use CI job token for push via HTTPS
+      git remote set-url origin "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+      git config user.name "GitLab CI"
+      git config user.email "ci@localhost"
+
+      TAGGED=0
+
+      if [ "${BUILD_ROCKY9}" = "true" ]; then
+        TAG="rocky9/${ROCKY_VERSION}-${IMAGE_DATE}"
+        git tag -a "$TAG" -m "Rocky ${ROCKY_VERSION} golden images built ${IMAGE_DATE}"
+        echo "Tagged: ${TAG}"
+        TAGGED=1
+      fi
+
+      if [ "${BUILD_DEBIAN12}" = "true" ]; then
+        TAG="debian12/${DEBIAN_VERSION}-${IMAGE_DATE}"
+        git tag -a "$TAG" -m "Debian ${DEBIAN_VERSION} golden image built ${IMAGE_DATE}"
+        echo "Tagged: ${TAG}"
+        TAGGED=1
+      fi
+
+      if [ "$TAGGED" -eq 1 ]; then
+        git push origin --tags
+      else
+        echo "No tags to push"
+      fi
+
+# -----------------------------------------------------------------------------
+# Stage: cleanup — Remove old images (manual trigger only)
+# -----------------------------------------------------------------------------
+cleanup-old-images:
+  stage: cleanup
+  tags:
+    - golden-image-builder
+  when: manual
+  allow_failure: true
+  variables:
+    KEEP_COUNT: "3"
+  script:
+    - |
+      set -euo pipefail
+      echo "Image cleanup — keeping last ${KEEP_COUNT} per type"
+      echo "TODO: implement image retention policy"
+      echo "This will use: ./build.sh list + ./build.sh delete"
