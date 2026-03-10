@@ -121,6 +121,7 @@ build-cis-debian12:
   needs:
     - job: detect-changes
       artifacts: true
+    - job: build-cis-rocky9
   timeout: 60m
   variables:
     TF_VAR_repo_mirror_url: "https://apt.example.com"
