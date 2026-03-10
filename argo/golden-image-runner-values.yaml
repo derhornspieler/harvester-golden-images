@@ -1,0 +1,95 @@
+# Helm values for GitLab golden-image-builder runner
+# Chart: gitlab/gitlab-runner
+# Deploy in: harvester-rke2-svcs/services/gitlab/runners/
+#
+# This runner executes golden image builds. The heavy lifting (virt-customize,
+# libguestfs) runs inside a Harvester utility VM — the runner only needs
+# Terraform + kubectl to orchestrate the build lifecycle.
+#
+# Runner pods need:
+#   - Harvester kubeconfig (mounted from secret)
+#   - Terraform, kubectl, jq, curl (in container image or pre_build_script)
+#   - Long timeout (builds take 30-60 minutes)
+
+replicas: 1
+
+## GitLab instance URL
+gitlabUrl: https://gitlab.CHANGEME_DOMAIN
+
+## TLS certificates for GitLab instance trust
+certsSecretName: gitlab-runner-certs
+
+## Runner registration
+runners:
+  secret: gitlab-gitlab-runner-secret
+  config: |
+    [[runners]]
+      name = "golden-image-builder"
+      executor = "kubernetes"
+      [runners.kubernetes]
+        namespace = "gitlab-runners"
+        image = "hashicorp/terraform:1.14"
+        service_account = "gitlab-runner-sa"
+        pull_policy = ["if-not-present"]
+        # Golden image builds take 30-60 minutes
+        poll_timeout = 7200
+        [runners.kubernetes.node_selector]
+          "workload-type" = "compute"
+        [runners.kubernetes.volumes]
+          [[runners.kubernetes.volumes.config_map]]
+            name = "vault-root-ca"
+            mount_path = "/etc/ssl/certs/vault-root-ca.pem"
+            sub_path = "ca.crt"
+            read_only = true
+          [[runners.kubernetes.volumes.secret]]
+            name = "harvester-kubeconfig"
+            mount_path = "/etc/harvester"
+            read_only = true
+        [runners.kubernetes.pod_labels]
+          "app.kubernetes.io/managed-by" = "gitlab-runner"
+        # Install kubectl and jq before build (terraform image has curl)
+        [runners.kubernetes.pod_annotations]
+          "golden-image-builder" = "true"
+      pre_build_script = """
+        apk add --no-cache kubectl jq bash coreutils
+        export KUBECONFIG=/etc/harvester/kubeconfig-harvester.yaml
+      """
+
+  ## Tags — only jobs tagged with "golden-image-builder" run here
+  tags: "golden-image-builder"
+
+## Runner pod node selector
+nodeSelector:
+  workload-type: general
+
+## RBAC — use pre-existing
+rbac:
+  create: false
+
+serviceAccount:
+  create: false
+  name: gitlab-runner-sa
+
+## Mount Root CA
+volumeMounts:
+  - name: vault-root-ca
+    mountPath: /etc/ssl/certs/vault-root-ca.pem
+    subPath: ca.crt
+    readOnly: true
+
+volumes:
+  - name: vault-root-ca
+    secret:
+      secretName: gitlab-runner-certs
+
+## Metrics
+metrics:
+  enabled: true
+  portName: metrics
+  port: 9252
+
+## Resources
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi

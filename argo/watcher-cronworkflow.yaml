@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
   name: golden-image-watcher
-  namespace: argo
+  namespace: argo-workflows
   labels:
     app: golden-image-watcher
 spec:
