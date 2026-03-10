@@ -17,8 +17,10 @@ workflow:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
       changes:
         - upstream-versions.json
-    # Allow manual trigger
+    # Allow manual trigger (web UI or API)
     - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_PIPELINE_SOURCE == "trigger"
+    - if: $CI_PIPELINE_SOURCE == "api"
 
 # -----------------------------------------------------------------------------
 # Stage: detect — Diff upstream-versions.json to find which distros changed
@@ -62,9 +64,9 @@ detect-changes:
         echo "Debian 12 — no change detected"
       fi
 
-      # On manual trigger, build everything that has version info
-      if [ "$CI_PIPELINE_SOURCE" = "web" ]; then
-        echo "Manual trigger — building all distros with version info"
+      # On manual/API trigger, build everything that has version info
+      if [ "$CI_PIPELINE_SOURCE" = "web" ] || [ "$CI_PIPELINE_SOURCE" = "trigger" ] || [ "$CI_PIPELINE_SOURCE" = "api" ]; then
+        echo "Manual/API trigger — building all distros with version info"
         [ -n "$ROCKY_VERSION" ] && BUILD_ROCKY9="true"
         [ -n "$DEBIAN_VERSION" ] && BUILD_DEBIAN12="true"
       fi
