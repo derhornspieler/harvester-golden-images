@@ -176,7 +176,7 @@ cmd_build() {
     log_ok "terraform-state namespace created"
   fi
 
-  terraform init -reconfigure -input=false
+  terraform init -reconfigure -input=false -backend-config="config_path=${HARVESTER_KUBECONFIG}"
 
   # Clean up orphaned builder resources if terraform state is empty
   # (happens when state was lost but Harvester resources still exist)
@@ -383,7 +383,7 @@ cmd_destroy() {
   ensure_kubeconfig
 
   cd "$SCRIPT_DIR"
-  terraform init -reconfigure -input=false
+  terraform init -reconfigure -input=false -backend-config="config_path=${HARVESTER_KUBECONFIG}"
 
   terraform destroy "$@"
   log_ok "Cleanup complete"
