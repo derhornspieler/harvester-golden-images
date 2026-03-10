@@ -23,8 +23,8 @@ variable "distro" {
   default     = "rocky9"
 
   validation {
-    condition     = contains(["rocky9", "debian12", "ubuntu2404", "fedora42"], var.distro)
-    error_message = "distro must be one of: rocky9, debian12, ubuntu2404, fedora42"
+    condition     = contains(["rocky9", "debian13", "ubuntu2404"], var.distro)
+    error_message = "distro must be one of: rocky9, debian13, ubuntu2404"
   }
 }
 

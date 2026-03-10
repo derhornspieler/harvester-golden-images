@@ -7,7 +7,7 @@ set -euo pipefail
 # Creates a pre-baked cloud image with CIS hardening using virt-customize +
 # OpenSCAP inside a temporary Harvester utility VM.
 #
-# Supported distros: rocky9, debian12, ubuntu2404, fedora42
+# Supported distros: rocky9, debian13, ubuntu2404
 #
 # Usage:
 #   ./build.sh build                    Build using terraform.tfvars
@@ -393,7 +393,7 @@ cmd_list() {
   $KUBECTL get virtualmachineimages.harvesterhci.io -n "${vm_namespace}" \
     --no-headers -o custom-columns=\
 'NAME:.metadata.name,DISPLAY:.spec.displayName,SIZE:.status.size,PROGRESS:.status.progress,AGE:.metadata.creationTimestamp' \
-    2>/dev/null | grep -E "(rocky9|debian12|ubuntu2404|fedora42)-cis-golden" || echo "  (no golden images found)"
+    2>/dev/null | grep -E "(rocky9|debian13|ubuntu2404)-cis-golden" || echo "  (no golden images found)"
 
   echo ""
 }
@@ -443,7 +443,7 @@ usage() {
 Usage: $(basename "$0") <command> [options] [args...]
 
 Multi-Distro CIS-Hardened Golden Image Build System
-Supports: rocky9, debian12, ubuntu2404, fedora42
+Supports: rocky9, debian13, ubuntu2404
 
 Options:
   -f, --var-file <file>    Terraform .tfvars file (default: terraform.tfvars)
@@ -456,7 +456,7 @@ Commands:
 
 Examples:
   $(basename "$0") build                          # Uses terraform.tfvars
-  $(basename "$0") build -f distros/debian12.tfvars
+  $(basename "$0") build -f distros/debian13.tfvars
   $(basename "$0") list
   $(basename "$0") delete rocky9-cis-golden-20260308
   $(basename "$0") destroy -auto-approve

@@ -1,7 +1,7 @@
 # =============================================================================
 # Multi-Distro CIS-Hardened Golden Image — Terraform Variables
 # =============================================================================
-# Supported distros: rocky9, debian12, ubuntu2404, fedora42
+# Supported distros: rocky9, debian13, ubuntu2404
 #
 # Quick start:
 #   cp terraform.tfvars.example terraform.tfvars
@@ -9,10 +9,10 @@
 #   ./build.sh build
 #
 # Per-distro builds:
-#   ./build.sh build -f distros/debian12.tfvars
+#   ./build.sh build -f distros/debian13.tfvars
 
 # --- Distro ---
-distro = "rocky9"   # rocky9 | debian12 | ubuntu2404 | fedora42
+distro = "rocky9"   # rocky9 | debian13 | ubuntu2404
 
 # --- Harvester ---
 harvester_kubeconfig_path   = "./kubeconfig-harvester.yaml"
