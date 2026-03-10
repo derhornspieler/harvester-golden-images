@@ -2,20 +2,22 @@
 set -euo pipefail
 
 # =============================================================================
-# deploy.sh — Deploy golden image watcher to rke2-prod
+# deploy.sh — Operations helper for golden image watcher on rke2-prod
 # =============================================================================
-# Sets up the Argo CronWorkflow and supporting resources on the rke2-prod
-# cluster. Requires:
-#   - kubectl configured for rke2-prod
-#   - vault CLI authenticated
-#   - Vault SecretStore "vault-backend" in argo-workflows namespace
+# DEPLOYMENT: Managed via Fleet GitOps in harvester-rke2-svcs repo.
+#   See: fleet-gitops/40-gitops/argo-workflows-manifests/manifests/
+#   See: fleet-gitops/50-gitlab/runners/
+# Do NOT use setup/apply/teardown for production — use Fleet.
+#
+# This script retains operational commands (trigger, status) and legacy
+# setup commands for local testing only.
 #
 # Usage:
-#   ./deploy.sh setup       Store secrets in Vault + apply K8s manifests
-#   ./deploy.sh apply       Apply K8s manifests only (secrets already in Vault)
 #   ./deploy.sh trigger     Manually trigger the watcher
 #   ./deploy.sh status      Show CronWorkflow status
-#   ./deploy.sh teardown    Remove all resources
+#   ./deploy.sh setup       (legacy) Store secrets in Vault + apply K8s manifests
+#   ./deploy.sh apply       (legacy) Apply K8s manifests only
+#   ./deploy.sh teardown    (legacy) Remove all resources
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
