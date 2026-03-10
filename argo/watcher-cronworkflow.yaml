@@ -1,3 +1,5 @@
+# REFERENCE ONLY — Source of truth is in harvester-rke2-svcs:
+#   fleet-gitops/40-gitops/argo-workflows-manifests/manifests/cronworkflow-golden-image-watcher.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:

@@ -110,7 +110,7 @@ read_stored_checksum() {
     return
   fi
 
-  jq -r ".${distro}.checksum // \"\"" "$versions_file"
+  jq -r --arg d "$distro" '.[$d].checksum // ""' "$versions_file"
 }
 
 # Update upstream-versions.json for a specific distro

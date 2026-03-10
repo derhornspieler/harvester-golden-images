@@ -1,6 +1,8 @@
+# REFERENCE ONLY — Source of truth is in harvester-rke2-svcs:
+#   fleet-gitops/50-gitlab/runners/golden-image-runner-values.yaml
+#
 # Helm values for GitLab golden-image-builder runner
 # Chart: gitlab/gitlab-runner
-# Deploy in: harvester-rke2-svcs/services/gitlab/runners/
 #
 # This runner executes golden image builds. The heavy lifting (virt-customize,
 # libguestfs) runs inside a Harvester utility VM — the runner only needs
@@ -28,7 +30,7 @@ runners:
       executor = "kubernetes"
       [runners.kubernetes]
         namespace = "gitlab-runners"
-        image = "hashicorp/terraform:1.14"
+        image = "hashicorp/terraform:1.12"
         service_account = "gitlab-runner-sa"
         pull_policy = ["if-not-present"]
         # Golden image builds take 30-60 minutes
