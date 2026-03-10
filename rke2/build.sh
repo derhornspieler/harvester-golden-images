@@ -88,6 +88,11 @@ _get_tfvar() {
 }
 
 get_image_name() {
+  # CI pipeline sets IMAGE_NAME_OVERRIDE for version-aware naming
+  if [[ -n "${IMAGE_NAME_OVERRIDE:-}" ]]; then
+    echo "$IMAGE_NAME_OVERRIDE"
+    return
+  fi
   local prefix
   prefix=$(_get_tfvar image_name_prefix)
   [[ -z "$prefix" ]] && prefix="rke2-rocky9-golden"
@@ -201,7 +206,12 @@ cmd_build() {
     fi
   fi
 
-  terraform apply -auto-approve
+  local tf_override_arg=""
+  if [[ -n "${IMAGE_NAME_OVERRIDE:-}" ]]; then
+    tf_override_arg="-var=image_name_override=${IMAGE_NAME_OVERRIDE}"
+  fi
+  # shellcheck disable=SC2086
+  terraform apply -auto-approve ${tf_override_arg}
 
   local vm_ip
   vm_ip=$(terraform output -raw utility_vm_ip 2>/dev/null || echo "")
@@ -298,7 +308,8 @@ VMIMAGE
   # -----------------------------------------------------------------------
   log_step "Step 5/5: Cleaning up utility VM..."
   cd "$SCRIPT_DIR"
-  terraform destroy -auto-approve
+  # shellcheck disable=SC2086
+  terraform destroy -auto-approve ${tf_override_arg}
   log_ok "Utility VM and base image cleaned up"
 
   # --- Summary ---

@@ -136,6 +136,12 @@ variable "image_name_prefix" {
   default     = ""
 }
 
+variable "image_name_override" {
+  description = "Full image name override (set by CI pipeline). When set, replaces the auto-generated name entirely."
+  type        = string
+  default     = ""
+}
+
 variable "ssh_authorized_keys" {
   description = "SSH keys for utility VM (debug access, NOT baked into golden image)"
   type        = list(string)
