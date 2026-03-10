@@ -186,6 +186,12 @@ git config user.email "golden-image-watcher@localhost"
 
 VERSIONS_FILE="${WORK_DIR}/repo/upstream-versions.json"
 
+# Initialize upstream-versions.json if it doesn't exist
+if [[ ! -f "$VERSIONS_FILE" ]]; then
+  log_info "No upstream-versions.json found — initializing empty file"
+  echo '{}' > "$VERSIONS_FILE"
+fi
+
 # Compare checksums
 changed_distros=()
 
