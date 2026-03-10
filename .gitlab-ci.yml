@@ -121,7 +121,6 @@ build-cis-debian12:
   needs:
     - job: detect-changes
       artifacts: true
-    - job: build-cis-rocky9
   timeout: 60m
   variables:
     TF_VAR_repo_mirror_url: "https://apt.example.com"
@@ -169,12 +168,16 @@ tag-build:
   stage: tag
   tags:
     - golden-image-builder
+  when: always
   needs:
     - job: detect-changes
       artifacts: true
     - job: build-cis-rocky9
+      optional: true
     - job: build-cis-debian12
+      optional: true
     - job: build-rke2
+      optional: true
   script:
     - |
       set -euo pipefail
