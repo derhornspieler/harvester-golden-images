@@ -2,15 +2,15 @@
   "rocky9": {
     "version": "9.7",
     "build": "20251123.2",
-    "checksum": "sha256:15d81d3434b298142b2fdd8fb54aef2662684db5c082cc191c3c79762ed6360c",
-    "detected_at": "2026-03-10T17:41:37Z",
+    "checksum": "sha256:force-rebuild-test",
+    "detected_at": "2026-03-10T18:05:00Z",
     "image_url": "https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base-9.7-20251123.2.x86_64.qcow2"
   },
   "debian12": {
     "version": "12",
     "build": "20260225",
-    "checksum": "sha512:8c4504754ccfade3fd51ded859a593a930c9f9fa741688f0d1b73ff16e6aeb03e3c881cda3218978a1b20f44c346dac955c9e843df32e612f318a5d25313629a",
-    "detected_at": "2026-03-10T17:41:38Z",
+    "checksum": "sha512:force-rebuild-test",
+    "detected_at": "2026-03-10T18:05:00Z",
     "image_url": "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2"
   }
 }
