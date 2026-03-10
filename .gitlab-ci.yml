@@ -96,6 +96,7 @@ build-cis-rocky9:
   stage: build
   tags:
     - golden-image-builder
+  resource_group: golden-image-builder
   needs:
     - job: detect-changes
       artifacts: true
@@ -118,6 +119,7 @@ build-cis-debian12:
   stage: build
   tags:
     - golden-image-builder
+  resource_group: golden-image-builder
   needs:
     - job: detect-changes
       artifacts: true
@@ -141,6 +143,7 @@ build-rke2:
   stage: build
   tags:
     - golden-image-builder
+  resource_group: golden-image-builder
   needs:
     - job: detect-changes
       artifacts: true
@@ -182,6 +185,9 @@ tag-build:
     - |
       set -euo pipefail
 
+      KUBECTL="kubectl --kubeconfig=${TF_VAR_harvester_kubeconfig_path}"
+      NS="${TF_VAR_vm_namespace}"
+
       # Use CI job token for push via HTTPS
       git remote set-url origin "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
       git config user.name "GitLab CI"
@@ -189,24 +195,42 @@ tag-build:
 
       TAGGED=0
 
+      # Only tag builds whose images actually exist in Harvester
       if [ "${BUILD_ROCKY9}" = "true" ]; then
-        TAG="rocky9/${ROCKY_VERSION}-${IMAGE_DATE}"
-        git tag -a "$TAG" -m "Rocky ${ROCKY_VERSION} golden images built ${IMAGE_DATE}"
-        echo "Tagged: ${TAG}"
-        TAGGED=1
+        CIS_IMAGE="rocky-${ROCKY_VERSION}-cis-${IMAGE_DATE}"
+        RKE2_IMAGE="rocky-${ROCKY_VERSION}-rke2-${IMAGE_DATE}"
+        CIS_OK=$($KUBECTL get virtualmachineimages.harvesterhci.io "$CIS_IMAGE" -n "$NS" &>/dev/null && echo "true" || echo "false")
+        RKE2_OK=$($KUBECTL get virtualmachineimages.harvesterhci.io "$RKE2_IMAGE" -n "$NS" &>/dev/null && echo "true" || echo "false")
+
+        if [ "$CIS_OK" = "true" ] || [ "$RKE2_OK" = "true" ]; then
+          TAG="rocky9/${ROCKY_VERSION}-${IMAGE_DATE}"
+          DETAILS=""
+          [ "$CIS_OK" = "true" ] && DETAILS="CIS"
+          [ "$RKE2_OK" = "true" ] && DETAILS="${DETAILS:+$DETAILS + }RKE2"
+          git tag -a "$TAG" -m "Rocky ${ROCKY_VERSION} golden images built ${IMAGE_DATE} (${DETAILS})"
+          echo "Tagged: ${TAG} (${DETAILS})"
+          TAGGED=1
+        else
+          echo "Rocky 9 — no images found in Harvester, skipping tag"
+        fi
       fi
 
       if [ "${BUILD_DEBIAN12}" = "true" ]; then
-        TAG="debian12/${DEBIAN_VERSION}-${IMAGE_DATE}"
-        git tag -a "$TAG" -m "Debian ${DEBIAN_VERSION} golden image built ${IMAGE_DATE}"
-        echo "Tagged: ${TAG}"
-        TAGGED=1
+        DEB_IMAGE="debian-${DEBIAN_VERSION}-cis-${IMAGE_DATE}"
+        if $KUBECTL get virtualmachineimages.harvesterhci.io "$DEB_IMAGE" -n "$NS" &>/dev/null; then
+          TAG="debian12/${DEBIAN_VERSION}-${IMAGE_DATE}"
+          git tag -a "$TAG" -m "Debian ${DEBIAN_VERSION} golden image built ${IMAGE_DATE}"
+          echo "Tagged: ${TAG}"
+          TAGGED=1
+        else
+          echo "Debian 12 — image not found in Harvester, skipping tag"
+        fi
       fi
 
       if [ "$TAGGED" -eq 1 ]; then
         git push origin --tags
       else
-        echo "No tags to push"
+        echo "No successful builds to tag"
       fi
 
 # -----------------------------------------------------------------------------
