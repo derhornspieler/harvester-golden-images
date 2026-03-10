@@ -11,6 +11,7 @@ crash.log
 !**/distros/*.tfvars.example
 **/kubeconfig-harvester.yaml
 *.pem
+!shared/private-ca.pem
 *.key
 
 # Build artifacts
