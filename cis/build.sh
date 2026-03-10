@@ -39,7 +39,7 @@ die() {
 
 # --- Constants ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HARVESTER_KUBECONFIG="${SCRIPT_DIR}/kubeconfig-harvester.yaml"
+HARVESTER_KUBECONFIG="${KUBECONFIG:-${SCRIPT_DIR}/kubeconfig-harvester.yaml}"
 KUBECTL="kubectl --kubeconfig=${HARVESTER_KUBECONFIG}"
 IMAGE_DATE=$(date +%Y%m%d)
 CHECK_POD_NAME="golden-build-check"

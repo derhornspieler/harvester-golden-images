@@ -22,6 +22,11 @@ workflow:
     - if: $CI_PIPELINE_SOURCE == "trigger"
     - if: $CI_PIPELINE_SOURCE == "api"
 
+# Terraform variables for Harvester builds
+variables:
+  TF_VAR_vm_namespace: "rke2-prod"
+  TF_VAR_harvester_kubeconfig_path: "/etc/harvester/kubeconfig-harvester.yaml"
+
 # -----------------------------------------------------------------------------
 # Stage: detect — Diff upstream-versions.json to find which distros changed
 # -----------------------------------------------------------------------------
