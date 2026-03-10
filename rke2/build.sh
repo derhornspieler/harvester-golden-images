@@ -102,7 +102,9 @@ get_image_name() {
 get_vm_namespace() {
   local ns
   ns=$(_get_tfvar vm_namespace)
-  [[ -z "$ns" ]] && die "vm_namespace not set in terraform.tfvars"
+  # Fall back to TF_VAR_ env var (used in CI)
+  [[ -z "$ns" ]] && ns="${TF_VAR_vm_namespace:-}"
+  [[ -z "$ns" ]] && die "vm_namespace not set in tfvars or TF_VAR_vm_namespace"
   echo "$ns"
 }
 
