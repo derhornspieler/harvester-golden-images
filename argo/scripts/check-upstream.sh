@@ -19,7 +19,7 @@ set -euo pipefail
 
 # --- Configuration ---
 ROCKY_CHECKSUM_URL="https://dl.rockylinux.org/pub/rocky/9/images/x86_64/CHECKSUM"
-DEBIAN_CHECKSUM_URL="https://cloud.debian.org/images/cloud/bookworm/latest/SHA512SUMS"
+DEBIAN_CHECKSUM_URL="https://cloud.debian.org/images/cloud/trixie/latest/SHA512SUMS"
 GIT_BRANCH="${GIT_BRANCH:-main}"
 DRY_RUN="${DRY_RUN:-false}"
 WORK_DIR="/tmp/upstream-check"
@@ -72,17 +72,17 @@ parse_rocky_checksum() {
 }
 
 # Parse Debian SHA512SUMS to extract checksum for generic-amd64 qcow2
-# Format: abc123...  debian-12-generic-amd64.qcow2
+# Format: abc123...  debian-13-generic-amd64.qcow2
 # Note: Debian "latest" uses a stable filename without build IDs. The checksum
 # itself is the change indicator. We use the SHA512SUMS Last-Modified date as
 # the build identifier.
 parse_debian_checksum() {
   local checksum_file="$1"
   local line
-  line=$(grep 'debian-12-generic-amd64\.qcow2$' "$checksum_file" | head -1)
+  line=$(grep 'debian-13-generic-amd64\.qcow2$' "$checksum_file" | head -1)
 
   if [[ -z "$line" ]]; then
-    log_warn "Could not find Debian 12 generic-amd64 qcow2 in checksum file"
+    log_warn "Could not find Debian 13 generic-amd64 qcow2 in checksum file"
     return 1
   fi
 
@@ -95,9 +95,9 @@ parse_debian_checksum() {
   local build
   build=$(date -d "$last_modified" +%Y%m%d 2>/dev/null || echo "unknown")
 
-  local image_url="https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2"
+  local image_url="https://cloud.debian.org/images/cloud/trixie/latest/debian-13-generic-amd64.qcow2"
 
-  echo "12|${build}|sha512:${checksum}|${image_url}"
+  echo "13|${build}|sha512:${checksum}|${image_url}"
 }
 
 # Read current stored checksum for a distro from upstream-versions.json
@@ -158,7 +158,7 @@ mkdir -p "$WORK_DIR"
 log_info "Fetching Rocky 9 checksums..."
 curl -sfL "$ROCKY_CHECKSUM_URL" -o "${WORK_DIR}/rocky-checksum" || die "Failed to fetch Rocky checksums"
 
-log_info "Fetching Debian 12 checksums..."
+log_info "Fetching Debian 13 checksums..."
 curl -sfL "$DEBIAN_CHECKSUM_URL" -o "${WORK_DIR}/debian-checksum" || die "Failed to fetch Debian checksums"
 
 # Parse upstream checksums
@@ -170,7 +170,7 @@ IFS='|' read -r rocky_version rocky_build rocky_checksum rocky_url <<< "$rocky_d
 IFS='|' read -r debian_version debian_build debian_checksum debian_url <<< "$debian_data"
 
 log_info "Rocky 9: version=${rocky_version} build=${rocky_build}"
-log_info "Debian 12: version=${debian_version} build=${debian_build}"
+log_info "Debian 13: version=${debian_version} build=${debian_build}"
 
 # Clone repo
 log_info "Cloning repository..."
@@ -204,13 +204,13 @@ else
   log_ok "Rocky 9: no change"
 fi
 
-stored_debian=$(read_stored_checksum "debian12" "$VERSIONS_FILE")
+stored_debian=$(read_stored_checksum "debian13" "$VERSIONS_FILE")
 if [[ "$stored_debian" != "$debian_checksum" ]]; then
-  log_info "Debian 12: checksum changed (${stored_debian:-empty} -> ${debian_checksum})"
-  update_versions_json "debian12" "$debian_version" "$debian_build" "$debian_checksum" "$debian_url" "$VERSIONS_FILE"
+  log_info "Debian 13: checksum changed (${stored_debian:-empty} -> ${debian_checksum})"
+  update_versions_json "debian13" "$debian_version" "$debian_build" "$debian_checksum" "$debian_url" "$VERSIONS_FILE"
   changed_distros+=("Debian ${debian_version}")
 else
-  log_ok "Debian 12: no change"
+  log_ok "Debian 13: no change"
 fi
 
 # Commit and push if anything changed

@@ -10,18 +10,17 @@ set -euo pipefail
 #
 # Image types:
 #   cis-rocky9     CIS-hardened Rocky Linux 9
-#   cis-debian12   CIS-hardened Debian 12
+#   cis-debian13   CIS-hardened Debian 13
 #   rke2           RKE2 pre-baked Rocky Linux 9
 #
 # Experimental (not built by default):
 #   cis-ubuntu2404  CIS-hardened Ubuntu 24.04
-#   cis-fedora42    CIS-hardened Fedora 42
 #
 # Usage:
 #   ./build.sh                           Build all three production images
 #   ./build.sh build all                 Same as above
 #   ./build.sh build cis-rocky9          Build a single image
-#   ./build.sh build cis-debian12        Build a single image
+#   ./build.sh build cis-debian13        Build a single image
 #   ./build.sh build rke2                Build a single image
 #   ./build.sh build cis-ubuntu2404      Build experimental image
 #   ./build.sh list                      Show all golden images
@@ -56,29 +55,26 @@ die() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Default production builds (sequential — they share the Harvester cluster)
-DEFAULT_BUILDS=("cis-rocky9" "cis-debian12" "rke2")
+DEFAULT_BUILDS=("cis-rocky9" "cis-debian13" "rke2")
 
 # All known image types
 declare -A IMAGE_BUILDERS=(
   ["cis-rocky9"]="cis"
-  ["cis-debian12"]="cis"
+  ["cis-debian13"]="cis"
   ["cis-ubuntu2404"]="cis"
-  ["cis-fedora42"]="cis"
   ["rke2"]="rke2"
 )
 
 # CIS distro tfvars mapping
 declare -A CIS_TFVARS=(
   ["cis-rocky9"]="distros/rocky9.tfvars"
-  ["cis-debian12"]="distros/debian12.tfvars"
+  ["cis-debian13"]="distros/debian13.tfvars"
   ["cis-ubuntu2404"]="distros/ubuntu2404.tfvars"
-  ["cis-fedora42"]="distros/fedora42.tfvars"
 )
 
 # Experimental images — warn when building
 declare -A EXPERIMENTAL=(
   ["cis-ubuntu2404"]=1
-  ["cis-fedora42"]=1
 )
 
 # --- Helpers ---
@@ -307,10 +303,9 @@ Commands:
 Build targets:
   all                   All production images (default)
   cis-rocky9            CIS-hardened Rocky Linux 9
-  cis-debian12          CIS-hardened Debian 12
+  cis-debian13          CIS-hardened Debian 13
   rke2                  RKE2 pre-baked Rocky Linux 9
   cis-ubuntu2404        CIS-hardened Ubuntu 24.04 (experimental)
-  cis-fedora42          CIS-hardened Fedora 42 (experimental)
 
 Examples:
   $(basename "$0")                           # Build all three production images

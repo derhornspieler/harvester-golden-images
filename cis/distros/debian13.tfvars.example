@@ -1,5 +1,5 @@
-# Fedora 42 — CIS L1 Server (DRAFT profiles — not for production compliance)
-distro = "fedora42"
+# Debian 13 (Trixie) — CIS L1 Server
+distro = "debian13"
 
 harvester_kubeconfig_path   = "./kubeconfig-harvester.yaml"
 vm_namespace                = "<YOUR_NAMESPACE>"
@@ -13,10 +13,10 @@ cis_type  = "server"
 # builder_image_url = "https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
 
 # Cloud image (leave empty to use upstream default)
-# cloud_image_url = "https://dl.example.com/fedora/42/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-42-1.1.x86_64.qcow2"
+# cloud_image_url = "https://dl.example.com/debian/13/images/debian-13-generic-amd64.qcow2"
 
 # Package mirror (leave empty to use upstream repos)
-# repo_mirror_url = "https://yum.example.com"
+# repo_mirror_url = "https://apt.example.com"
 
 ssh_authorized_keys = [
   # "ssh-ed25519 AAAA... user@host",

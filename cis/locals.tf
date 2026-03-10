@@ -27,14 +27,14 @@ locals {
       disable_firewall = "systemctl disable firewalld || true"
       enable_firewall  = "systemctl enable iptables"
     }
-    debian12 = {
+    debian13 = {
       family           = "debian"
       pkg_manager      = "apt"
-      default_image    = "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2"
+      default_image    = "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-generic-amd64.qcow2"
       ssg_package      = "ssg-debian"
       oscap_package    = "openscap-scanner"
-      datastream       = "/usr/share/xml/scap/ssg/content/ssg-debian12-ds.xml"
-      alt_datastreams  = ["ssg-debian11-ds.xml"]
+      datastream       = "/usr/share/xml/scap/ssg/content/ssg-debian13-ds.xml"
+      alt_datastreams  = ["ssg-debian12-ds.xml"]
       cis_profile_fmt  = "xccdf_org.ssgproject.content_profile_cis_level%s_%s" # level_number, type
       extra_packages   = "apt-transport-https,ca-certificates,cloud-init,cloud-guest-utils,auditd"
       ca_trust_dir     = "/usr/local/share/ca-certificates"
@@ -60,23 +60,6 @@ locals {
       firewall_pkg     = "iptables-persistent"
       disable_firewall = "true"
       enable_firewall  = "systemctl enable netfilter-persistent || true"
-    }
-    fedora42 = {
-      family           = "rhel"
-      pkg_manager      = "dnf"
-      default_image    = "https://dl.fedoraproject.org/pub/fedora/linux/releases/42/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-42-1.1.x86_64.qcow2"
-      ssg_package      = "scap-security-guide"
-      oscap_package    = "openscap-scanner"
-      datastream       = "/usr/share/xml/scap/ssg/content/ssg-fedora-ds.xml"
-      alt_datastreams  = []
-      cis_profile_fmt  = "xccdf_org.ssgproject.content_profile_cis_%s_%s" # type, level
-      extra_packages   = "policycoreutils-python-utils,audit,cloud-init,cloud-utils-growpart"
-      ca_trust_dir     = "/etc/pki/ca-trust/source/anchors"
-      ca_trust_cmd     = "update-ca-trust"
-      selinux          = true
-      firewall_pkg     = "iptables-services"
-      disable_firewall = "systemctl disable firewalld || true"
-      enable_firewall  = "systemctl enable iptables"
     }
   }
 

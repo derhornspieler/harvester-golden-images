@@ -6,11 +6,18 @@
     "detected_at": "2026-03-10T23:00:08Z",
     "image_url": "https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base-9.7-20251123.2.x86_64.qcow2"
   },
-  "debian12": {
-    "version": "12",
+  "debian13": {
+    "version": "13",
     "build": "20260225",
-    "checksum": "sha512:8c4504754ccfade3fd51ded859a593a930c9f9fa741688f0d1b73ff16e6aeb03e3c881cda3218978a1b20f44c346dac955c9e843df32e612f318a5d25313629a",
-    "detected_at": "2026-03-10T23:00:08Z",
-    "image_url": "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2"
+    "checksum": "sha512:initial",
+    "detected_at": "2026-03-11T00:00:00Z",
+    "image_url": "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-generic-amd64.qcow2"
+  },
+  "ubuntu2404": {
+    "version": "24.04",
+    "build": "20260225",
+    "checksum": "sha256:initial",
+    "detected_at": "2026-03-11T00:00:00Z",
+    "image_url": "https://cloud-images.ubuntu.com/releases/noble/release/ubuntu-24.04-server-cloudimg-amd64.img"
   }
 }
