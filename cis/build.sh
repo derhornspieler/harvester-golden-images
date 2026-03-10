@@ -103,7 +103,11 @@ check_connectivity() {
 }
 
 _get_tfvar() {
-  local file="${TFVARS_FILE:-${SCRIPT_DIR}/terraform.tfvars}"
+  local file="${TFVARS_FILE:-terraform.tfvars}"
+  # Resolve relative paths against SCRIPT_DIR
+  if [[ "$file" != /* ]]; then
+    file="${SCRIPT_DIR}/${file}"
+  fi
   awk -F'"' "/^${1}[[:space:]]/ {print \$2}" "$file" 2>/dev/null || echo ""
 }
 
