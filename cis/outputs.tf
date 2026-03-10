@@ -25,3 +25,8 @@ output "cis_profile" {
   description = "CIS profile applied"
   value       = local.cis_profile_id
 }
+
+output "golden_image_name" {
+  description = "Final golden image name (override or auto-generated)"
+  value       = var.image_name_override != "" ? var.image_name_override : local.image_name_prefix
+}
