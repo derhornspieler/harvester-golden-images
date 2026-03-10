@@ -71,12 +71,15 @@ parse_rocky_checksum() {
   echo "${version}|${build}|sha256:${checksum}|${image_url}"
 }
 
-# Parse Debian SHA512SUMS to extract build and checksum for generic-amd64 qcow2
-# Format: abc123...  debian-12-generic-amd64-20260309-2019.qcow2
+# Parse Debian SHA512SUMS to extract checksum for generic-amd64 qcow2
+# Format: abc123...  debian-12-generic-amd64.qcow2
+# Note: Debian "latest" uses a stable filename without build IDs. The checksum
+# itself is the change indicator. We use the SHA512SUMS Last-Modified date as
+# the build identifier.
 parse_debian_checksum() {
   local checksum_file="$1"
   local line
-  line=$(grep 'debian-12-generic-amd64.*\.qcow2' "$checksum_file" | head -1)
+  line=$(grep 'debian-12-generic-amd64\.qcow2$' "$checksum_file" | head -1)
 
   if [[ -z "$line" ]]; then
     log_warn "Could not find Debian 12 generic-amd64 qcow2 in checksum file"
@@ -86,14 +89,13 @@ parse_debian_checksum() {
   local checksum
   checksum=$(echo "$line" | awk '{print $1}')
 
-  local filename
-  filename=$(echo "$line" | awk '{print $2}')
-
-  # Extract build: 20260309-2019
+  # Get build date from Last-Modified header of the checksum file
+  local last_modified
+  last_modified=$(curl -sfI "$DEBIAN_CHECKSUM_URL" | grep -i 'last-modified' | sed 's/[Ll]ast-[Mm]odified: //' | tr -d '\r')
   local build
-  build=$(echo "$filename" | sed -n 's/debian-12-generic-amd64-\(.*\)\.qcow2/\1/p')
+  build=$(date -d "$last_modified" +%Y%m%d 2>/dev/null || echo "unknown")
 
-  local image_url="https://cloud.debian.org/images/cloud/bookworm/latest/${filename}"
+  local image_url="https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2"
 
   echo "12|${build}|sha512:${checksum}|${image_url}"
 }

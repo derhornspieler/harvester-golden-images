@@ -13,12 +13,15 @@ spec:
   failedJobsHistoryLimit: 3
   workflowSpec:
     entrypoint: check-upstream
-    serviceAccountName: golden-image-watcher
+    serviceAccountName: argo-workflow
     volumes:
       - name: watcher-script
         configMap:
           name: golden-image-watcher-script
           defaultMode: 0755
+      - name: vault-root-ca
+        configMap:
+          name: vault-root-ca
     templates:
       - name: check-upstream
         container:
@@ -26,6 +29,8 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
+              cp /etc/ssl/custom/ca.crt /usr/local/share/ca-certificates/vault-root-ca.crt &&
+              update-ca-certificates &&
               apk add --no-cache curl jq bash coreutils &&
               bash /scripts/check-upstream.sh
           env:
@@ -47,6 +52,9 @@ spec:
           volumeMounts:
             - name: watcher-script
               mountPath: /scripts
+            - name: vault-root-ca
+              mountPath: /etc/ssl/custom
+              readOnly: true
           resources:
             requests:
               memory: "128Mi"
