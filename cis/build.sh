@@ -256,7 +256,7 @@ cmd_build() {
   log_info "Deploying check pod on Harvester..."
   deploy_check_pod "$vm_namespace"
 
-  local timeout=3600 interval=15 elapsed=0
+  local timeout=5400 interval=15 elapsed=0
 
   while [[ $elapsed -lt $timeout ]]; do
     if check_vm_ready "$vm_namespace" "$vm_ip"; then
