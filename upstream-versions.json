@@ -9,14 +9,14 @@
   "debian13": {
     "version": "13",
     "build": "20260225",
-    "checksum": "sha512:initial",
+    "checksum": "sha512:build-test-1",
     "detected_at": "2026-03-11T00:00:00Z",
     "image_url": "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-generic-amd64.qcow2"
   },
   "ubuntu2404": {
     "version": "24.04",
     "build": "20260225",
-    "checksum": "sha256:initial",
+    "checksum": "sha256:build-test-1",
     "detected_at": "2026-03-11T00:00:00Z",
     "image_url": "https://cloud-images.ubuntu.com/releases/noble/release/ubuntu-24.04-server-cloudimg-amd64.img"
   }
