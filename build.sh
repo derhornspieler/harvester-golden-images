@@ -55,7 +55,7 @@ die() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Default production builds (sequential — they share the Harvester cluster)
-DEFAULT_BUILDS=("cis-rocky9" "cis-debian13" "rke2")
+DEFAULT_BUILDS=("cis-rocky9" "cis-debian13" "cis-ubuntu2404" "rke2")
 
 # All known image types
 declare -A IMAGE_BUILDERS=(
@@ -74,7 +74,6 @@ declare -A CIS_TFVARS=(
 
 # Experimental images — warn when building
 declare -A EXPERIMENTAL=(
-  ["cis-ubuntu2404"]=1
 )
 
 # --- Helpers ---
