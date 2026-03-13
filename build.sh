@@ -9,12 +9,10 @@ set -euo pipefail
 # same Harvester cluster and cannot run in parallel).
 #
 # Image types:
-#   cis-rocky9     CIS-hardened Rocky Linux 9
-#   cis-debian13   CIS-hardened Debian 13
-#   rke2           RKE2 pre-baked Rocky Linux 9
-#
-# Experimental (not built by default):
+#   cis-rocky9      CIS-hardened Rocky Linux 9
+#   cis-debian13    CIS-hardened Debian 13
 #   cis-ubuntu2404  CIS-hardened Ubuntu 24.04
+#   rke2            RKE2 pre-baked Rocky Linux 9
 #
 # Usage:
 #   ./build.sh                           Build all three production images
@@ -27,8 +25,13 @@ set -euo pipefail
 #   ./build.sh delete <name>             Delete a golden image
 #   ./build.sh destroy                   Manual cleanup (all sub-projects)
 #
-# Environment variables (set by CI pipeline):
+# Environment variables (set by CI pipeline or .env file for local dev):
 #   IMAGE_NAME_OVERRIDE    Full image name (e.g., rocky-9.7-cis-20260310)
+#   PROXY_CACHE_DL_URL     Cloud image download proxy (e.g., https://dl.example.com)
+#   PROXY_CACHE_YUM_URL    RPM repo proxy (e.g., https://yum.example.com)
+#   PROXY_CACHE_APT_URL    APT repo proxy (e.g., https://apt.example.com)
+#
+# For local development, copy .env.example to .env and fill in your values.
 # =============================================================================
 
 # --- Colors & Logging ---
@@ -53,6 +56,12 @@ die() {
 
 # --- Constants ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Load .env file if present (for local development)
+if [[ -f "${SCRIPT_DIR}/.env" ]]; then
+  # shellcheck disable=SC1091
+  set -a; source "${SCRIPT_DIR}/.env"; set +a
+fi
 
 # Default production builds (sequential — they share the Harvester cluster)
 DEFAULT_BUILDS=("cis-rocky9" "cis-debian13" "cis-ubuntu2404" "rke2")

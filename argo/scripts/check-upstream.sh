@@ -182,7 +182,7 @@ cd "${WORK_DIR}/repo"
 
 # Configure git
 git config user.name "Golden Image Watcher"
-git config user.email "golden-image-watcher@localhost"
+git config user.email "${GIT_EMAIL:-golden-image-watcher@localhost}"
 
 VERSIONS_FILE="${WORK_DIR}/repo/upstream-versions.json"
 

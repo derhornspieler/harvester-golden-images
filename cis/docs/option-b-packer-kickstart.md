@@ -69,7 +69,7 @@ packer {
 
 variable "iso_url" {
   type    = string
-  default = "https://dl.example.com/rocky/9/isos/x86_64/Rocky-9-latest-x86_64-minimal.iso"
+  default = "https://dl.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9-latest-x86_64-minimal.iso"
 }
 
 variable "iso_checksum" {

@@ -141,7 +141,7 @@ When processing Debian or Ubuntu images, `virt-customize --update` and `--instal
 
 ### libguestfs appliance cannot resolve private DNS
 
-The libguestfs appliance (a minimal kernel that runs `virt-customize` operations) cannot resolve private DNS names like `deb.example.com`. Workaround: the builder uses upstream distribution repos (e.g., `deb.debian.org`) during the `virt-customize` phase, then bakes proxy-cache sources into the final image for runtime use.
+The libguestfs appliance (a minimal kernel that runs `virt-customize` operations) cannot resolve private DNS names (e.g., your proxy-cache hostname). Workaround: the builder uses upstream distribution repos (e.g., `deb.debian.org`) during the `virt-customize` phase, then bakes proxy-cache sources into the final image for runtime use.
 
 ### Debian /bin/sh is dash (no pipefail)
 

@@ -21,8 +21,12 @@ crash.log
 .claude/
 CLAUDE.md
 memory/
+docs/superpowers/
 *.plan
 *.plan.md
+
+# Environment (local dev secrets)
+.env
 
 # OS
 .DS_Store

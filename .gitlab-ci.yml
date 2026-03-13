@@ -23,13 +23,19 @@ workflow:
     - if: $CI_PIPELINE_SOURCE == "api"
 
 # Terraform variables for Harvester builds
+# NOTE: Domain-specific URLs (proxy-cache, mirrors) are set as GitLab CI/CD
+# project variables, not hardcoded here. Required project variables:
+#   PROXY_CACHE_DL_URL    — Cloud image download proxy (e.g., https://dl.example.com)
+#   PROXY_CACHE_YUM_URL   — RPM repo proxy (e.g., https://yum.example.com)
+#   PROXY_CACHE_APT_URL   — APT repo proxy (e.g., https://apt.example.com)
+#   CI_GIT_EMAIL          — Email for CI git commits (e.g., ci@example.com)
 variables:
   TF_VAR_vm_namespace: "rke2-prod"
   TF_VAR_harvester_kubeconfig_path: "/etc/harvester/kubeconfig-harvester.yaml"
   TF_VAR_harvester_network_name: "vm-network"
   TF_VAR_harvester_network_namespace: "default"
-  TF_VAR_builder_image_url: "https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
-  TF_VAR_repo_mirror_url: "https://yum.example.com"
+  TF_VAR_builder_image_url: "${PROXY_CACHE_DL_URL}/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+  TF_VAR_repo_mirror_url: "${PROXY_CACHE_YUM_URL}"
 
 # -----------------------------------------------------------------------------
 # Stage: detect — Diff upstream-versions.json to find which distros changed
@@ -116,7 +122,7 @@ build-cis-rocky9:
       artifacts: true
   timeout: 90m
   variables:
-    TF_VAR_cloud_image_url: "https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+    TF_VAR_cloud_image_url: "${PROXY_CACHE_DL_URL}/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
   script:
     - |
       set -euo pipefail
@@ -139,7 +145,7 @@ build-cis-debian13:
       artifacts: true
   timeout: 90m
   variables:
-    TF_VAR_repo_mirror_url: "https://apt.example.com"
+    TF_VAR_repo_mirror_url: "${PROXY_CACHE_APT_URL}"
     TF_VAR_cloud_image_url: ""
   script:
     - |
@@ -163,7 +169,7 @@ build-cis-ubuntu2404:
       artifacts: true
   timeout: 90m
   variables:
-    TF_VAR_repo_mirror_url: "https://apt.example.com"
+    TF_VAR_repo_mirror_url: "${PROXY_CACHE_APT_URL}"
     TF_VAR_cloud_image_url: ""
   script:
     - |
@@ -187,9 +193,9 @@ build-rke2:
       artifacts: true
   timeout: 60m
   variables:
-    TF_VAR_rocky_image_url: "https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
-    TF_VAR_rocky_repo_url: "https://yum.example.com"
-    TF_VAR_rke2_repo_url: "https://yum.example.com/rke2/latest"
+    TF_VAR_rocky_image_url: "${PROXY_CACHE_DL_URL}/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+    TF_VAR_rocky_repo_url: "${PROXY_CACHE_YUM_URL}"
+    TF_VAR_rke2_repo_url: "${PROXY_CACHE_YUM_URL}/rke2/latest"
   script:
     - |
       set -euo pipefail
@@ -231,7 +237,7 @@ tag-build:
       # Use CI job token for push via HTTPS
       git remote set-url origin "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
       git config user.name "GitLab CI"
-      git config user.email "ci@localhost"
+      git config user.email "${CI_GIT_EMAIL:-ci@localhost}"
 
       TAGGED=0
 

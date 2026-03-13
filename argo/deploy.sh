@@ -60,7 +60,7 @@ cmd_setup() {
   read -rp "GitLab username (for git push): " gitlab_user
   read -rsp "GitLab project access token: " gitlab_token
   echo ""
-  read -rp "GitLab repo URL (e.g., gitlab.example.com/infrastructure/harvester-golden-images.git): " gitlab_repo_url
+  read -rp "GitLab repo URL (e.g., gitlab.example.com/group/harvester-golden-images.git): " gitlab_repo_url
 
   vault kv put "${VAULT_PATH}" \
     username="${gitlab_user}" \
