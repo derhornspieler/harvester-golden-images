@@ -25,8 +25,7 @@ jobs:
             ### Image Types
             | Image | Distros | Status |
             |-------|---------|--------|
-            | CIS-Hardened | Rocky 9, Debian 12 | Production |
-            | CIS-Hardened | Ubuntu 24.04, Fedora 42 | Experimental |
+            | CIS-Hardened | Rocky 9, Debian 13, Ubuntu 24.04 | Production |
             | RKE2 Node | Rocky 9 | Production |
 
             ### Versions
