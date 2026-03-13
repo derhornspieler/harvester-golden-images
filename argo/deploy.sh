@@ -4,13 +4,8 @@ set -euo pipefail
 # =============================================================================
 # deploy.sh — Operations helper for golden image watcher on rke2-prod
 # =============================================================================
-# DEPLOYMENT: Managed via Fleet GitOps in harvester-rke2-svcs repo.
-#   See: fleet-gitops/40-gitops/argo-workflows-manifests/manifests/
-#   See: fleet-gitops/50-gitlab/runners/
-# Do NOT use setup/apply/teardown for production — use Fleet.
-#
-# This script retains operational commands (trigger, status) and legacy
-# setup commands for local testing only.
+# This repo is the source of truth for all golden-image-watcher manifests.
+# Manifests were migrated from harvester-rke2-svcs (2026-03-13).
 #
 # Usage:
 #   ./deploy.sh trigger     Manually trigger the watcher
