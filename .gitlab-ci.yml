@@ -30,7 +30,7 @@ workflow:
 #   PROXY_CACHE_APT_URL   — APT repo proxy (e.g., https://apt.example.com)
 #   CI_GIT_EMAIL          — Email for CI git commits (e.g., ci@example.com)
 variables:
-  TF_VAR_vm_namespace: "rke2-prod"
+  TF_VAR_vm_namespace: "default"
   TF_VAR_harvester_kubeconfig_path: "/etc/harvester/kubeconfig-harvester.yaml"
   TF_VAR_harvester_network_name: "vm-network"
   TF_VAR_harvester_network_namespace: "default"
