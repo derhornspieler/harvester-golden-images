@@ -37,6 +37,12 @@ variables:
   TF_VAR_builder_image_url: "${PROXY_CACHE_DL_URL}/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
   TF_VAR_repo_mirror_url: "${PROXY_CACHE_YUM_URL}"
 
+# Install tools missing from hashicorp/terraform Alpine image
+before_script:
+  - apk add --no-cache jq curl
+  - curl -sLo /usr/local/bin/kubectl "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+  - chmod +x /usr/local/bin/kubectl
+
 # -----------------------------------------------------------------------------
 # Stage: detect — Diff upstream-versions.json to find which distros changed
 # -----------------------------------------------------------------------------
