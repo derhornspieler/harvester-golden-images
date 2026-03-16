@@ -112,7 +112,7 @@ build-cis-rocky9:
   needs:
     - job: detect-changes
       artifacts: true
-  timeout: 90m
+  timeout: 120m
   variables:
     TF_VAR_cloud_image_url: "${PROXY_CACHE_DL_URL}/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
   script:
@@ -140,7 +140,7 @@ build-cis-debian13:
   needs:
     - job: detect-changes
       artifacts: true
-  timeout: 90m
+  timeout: 120m
   variables:
     TF_VAR_repo_mirror_url: "${PROXY_CACHE_APT_URL}"
     TF_VAR_cloud_image_url: ""
