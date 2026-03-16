@@ -60,15 +60,12 @@ detect-changes:
       # Read current version info
       ROCKY_VERSION=$(jq -r '.rocky9.version // ""' upstream-versions.json)
       DEBIAN13_VERSION=$(jq -r '.debian13.version // ""' upstream-versions.json)
-      UBUNTU_VERSION=$(jq -r '.ubuntu2404.version // ""' upstream-versions.json)
       echo "ROCKY_VERSION=${ROCKY_VERSION}" >> detect.env
       echo "DEBIAN13_VERSION=${DEBIAN13_VERSION}" >> detect.env
-      echo "UBUNTU_VERSION=${UBUNTU_VERSION}" >> detect.env
 
       # Determine what actually changed by comparing JSON fields with previous commit
       BUILD_ROCKY9="false"
       BUILD_DEBIAN13="false"
-      BUILD_UBUNTU2404="false"
 
       OLD_ROCKY_CHECKSUM=$(git show HEAD~1:upstream-versions.json 2>/dev/null | jq -r '.rocky9.checksum // ""' 2>/dev/null || echo "")
       NEW_ROCKY_CHECKSUM=$(jq -r '.rocky9.checksum // ""' upstream-versions.json)
@@ -88,26 +85,15 @@ detect-changes:
         echo "Debian 13 — no change detected"
       fi
 
-      OLD_UBUNTU_CHECKSUM=$(git show HEAD~1:upstream-versions.json 2>/dev/null | jq -r '.ubuntu2404.checksum // ""' 2>/dev/null || echo "")
-      NEW_UBUNTU_CHECKSUM=$(jq -r '.ubuntu2404.checksum // ""' upstream-versions.json)
-      if [ "$OLD_UBUNTU_CHECKSUM" != "$NEW_UBUNTU_CHECKSUM" ]; then
-        BUILD_UBUNTU2404="true"
-        echo "Ubuntu 24.04 ${UBUNTU_VERSION} — checksum changed, will build"
-      else
-        echo "Ubuntu 24.04 — no change detected"
-      fi
-
       # On manual/API trigger, build everything that has version info
       if [ "$CI_PIPELINE_SOURCE" = "web" ] || [ "$CI_PIPELINE_SOURCE" = "trigger" ] || [ "$CI_PIPELINE_SOURCE" = "api" ]; then
         echo "Manual/API trigger — building all distros with version info"
         [ -n "$ROCKY_VERSION" ] && BUILD_ROCKY9="true"
         [ -n "$DEBIAN13_VERSION" ] && BUILD_DEBIAN13="true"
-        [ -n "$UBUNTU_VERSION" ] && BUILD_UBUNTU2404="true"
       fi
 
       echo "BUILD_ROCKY9=${BUILD_ROCKY9}" >> detect.env
       echo "BUILD_DEBIAN13=${BUILD_DEBIAN13}" >> detect.env
-      echo "BUILD_UBUNTU2404=${BUILD_UBUNTU2404}" >> detect.env
   artifacts:
     reports:
       dotenv: detect.env
@@ -165,30 +151,6 @@ build-cis-debian13:
       echo "Building CIS Debian 13 as: ${IMAGE_NAME_OVERRIDE}"
       ./build.sh build cis-debian13
 
-build-cis-ubuntu2404:
-  stage: build
-  tags:
-    - golden-image-builder
-  resource_group: golden-image-builder
-  needs:
-    - job: detect-changes
-      artifacts: true
-  timeout: 90m
-  variables:
-    TF_VAR_repo_mirror_url: "${PROXY_CACHE_APT_URL}"
-    TF_VAR_cloud_image_url: ""
-  script:
-    - |
-      set -euo pipefail
-      if [ "${BUILD_UBUNTU2404}" != "true" ]; then
-        echo "Ubuntu 24.04 not changed — skipping"
-        exit 0
-      fi
-      export TF_VAR_private_ca_pem="$(cat shared/private-ca.pem)"
-      export IMAGE_NAME_OVERRIDE="ubuntu-${UBUNTU_VERSION}-cis-${IMAGE_DATE}"
-      echo "Building CIS Ubuntu 24.04 as: ${IMAGE_NAME_OVERRIDE}"
-      ./build.sh build cis-ubuntu2404
-
 build-rke2:
   stage: build
   tags:
@@ -228,8 +190,6 @@ tag-build:
     - job: build-cis-rocky9
       optional: true
     - job: build-cis-debian13
-      optional: true
-    - job: build-cis-ubuntu2404
       optional: true
     - job: build-rke2
       optional: true
@@ -276,18 +236,6 @@ tag-build:
           TAGGED=1
         else
           echo "Debian 13 — image not found in Harvester, skipping tag"
-        fi
-      fi
-
-      if [ "${BUILD_UBUNTU2404}" = "true" ]; then
-        UBU_IMAGE="ubuntu-${UBUNTU_VERSION}-cis-${IMAGE_DATE}"
-        if $KUBECTL get virtualmachineimages.harvesterhci.io "$UBU_IMAGE" -n "$NS" &>/dev/null; then
-          TAG="ubuntu2404/${UBUNTU_VERSION}-${IMAGE_DATE}"
-          git tag -a "$TAG" -m "Ubuntu ${UBUNTU_VERSION} golden image built ${IMAGE_DATE}"
-          echo "Tagged: ${TAG}"
-          TAGGED=1
-        else
-          echo "Ubuntu 24.04 — image not found in Harvester, skipping tag"
         fi
       fi
 
