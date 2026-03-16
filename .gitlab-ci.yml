@@ -122,8 +122,13 @@ build-cis-rocky9:
         echo "Rocky 9 not changed — skipping"
         exit 0
       fi
-      export TF_VAR_private_ca_pem="$(cat shared/aegis-root-ca.pem)"
       export IMAGE_NAME_OVERRIDE="rocky-${ROCKY_VERSION}-cis-${IMAGE_DATE}"
+      KUBECTL="kubectl --kubeconfig=${TF_VAR_harvester_kubeconfig_path}"
+      if $KUBECTL get virtualmachineimages.harvesterhci.io "${IMAGE_NAME_OVERRIDE}" -n "${TF_VAR_vm_namespace}" &>/dev/null; then
+        echo "Image ${IMAGE_NAME_OVERRIDE} already exists in Harvester — skipping build"
+        exit 0
+      fi
+      export TF_VAR_private_ca_pem="$(cat shared/aegis-root-ca.pem)"
       echo "Building CIS Rocky 9 as: ${IMAGE_NAME_OVERRIDE}"
       ./build.sh build cis-rocky9
 
@@ -146,8 +151,13 @@ build-cis-debian13:
         echo "Debian 13 not changed — skipping"
         exit 0
       fi
-      export TF_VAR_private_ca_pem="$(cat shared/aegis-root-ca.pem)"
       export IMAGE_NAME_OVERRIDE="debian-${DEBIAN13_VERSION}-cis-${IMAGE_DATE}"
+      KUBECTL="kubectl --kubeconfig=${TF_VAR_harvester_kubeconfig_path}"
+      if $KUBECTL get virtualmachineimages.harvesterhci.io "${IMAGE_NAME_OVERRIDE}" -n "${TF_VAR_vm_namespace}" &>/dev/null; then
+        echo "Image ${IMAGE_NAME_OVERRIDE} already exists in Harvester — skipping build"
+        exit 0
+      fi
+      export TF_VAR_private_ca_pem="$(cat shared/aegis-root-ca.pem)"
       echo "Building CIS Debian 13 as: ${IMAGE_NAME_OVERRIDE}"
       ./build.sh build cis-debian13
 
@@ -171,8 +181,13 @@ build-rke2:
         echo "Rocky 9 not changed — skipping RKE2 build"
         exit 0
       fi
-      export TF_VAR_private_ca_pem="$(cat shared/aegis-root-ca.pem)"
       export IMAGE_NAME_OVERRIDE="rocky-${ROCKY_VERSION}-rke2-${IMAGE_DATE}"
+      KUBECTL="kubectl --kubeconfig=${TF_VAR_harvester_kubeconfig_path}"
+      if $KUBECTL get virtualmachineimages.harvesterhci.io "${IMAGE_NAME_OVERRIDE}" -n "${TF_VAR_vm_namespace}" &>/dev/null; then
+        echo "Image ${IMAGE_NAME_OVERRIDE} already exists in Harvester — skipping build"
+        exit 0
+      fi
+      export TF_VAR_private_ca_pem="$(cat shared/aegis-root-ca.pem)"
       echo "Building RKE2 Rocky 9 as: ${IMAGE_NAME_OVERRIDE}"
       ./build.sh build rke2
 
