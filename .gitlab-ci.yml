@@ -12,12 +12,11 @@ stages:
   - cleanup
   - sync
 
-# Only run this pipeline when upstream-versions.json changes on main
+# Run on any push to main (sync-to-github needs this; build jobs skip
+# themselves via script-level checks when upstream-versions.json is unchanged)
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
-      changes:
-        - upstream-versions.json
     # Allow manual trigger (web UI or API)
     - if: $CI_PIPELINE_SOURCE == "web"
     - if: $CI_PIPELINE_SOURCE == "trigger"
