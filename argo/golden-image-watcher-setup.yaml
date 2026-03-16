@@ -69,7 +69,7 @@ spec:
           command: ["/bin/bash", "-euo", "pipefail", "-c"]
           args:
             - |
-              DOMAIN="aegisgroup.ch"
+              DOMAIN="${GITLAB_DOMAIN:-example.com}"
               GITLAB_URL="https://gitlab.${DOMAIN}"
               GITLAB_REPO_URL="gitlab.${DOMAIN}/infra_and_platform_services/harvester-golden-images.git"
               PROJECT_PATH="infra_and_platform_services/harvester-golden-images"
