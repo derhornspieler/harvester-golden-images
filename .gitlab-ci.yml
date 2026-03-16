@@ -272,6 +272,8 @@ cleanup-old-images:
 # Vault path: kv/services/ci/github-mirror (mirror-url, ssh-private-key)
 sync-to-github:
   stage: sync
+  tags:
+    - shared
   image: docker.io/alpine:3.21
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
