@@ -290,6 +290,9 @@ sync-to-github:
   tags:
     - shared
   image: docker.io/alpine:3.21
+  id_tokens:
+    VAULT_ID_TOKEN:
+      aud: https://gitlab.${DOMAIN}
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: always
@@ -302,21 +305,15 @@ sync-to-github:
     - git config --global user.email "mirror@ci.local"
   script:
     - |
-      # Debug: verify DOMAIN and CA cert are available
-      echo "DOMAIN=${DOMAIN:-NOT SET}"
-      echo "VAULT_ADDR=${VAULT_ADDR}"
-      ls -la /etc/ssl/certs/vault-root-ca.pem 2>/dev/null || echo "WARNING: vault-root-ca.pem not mounted"
-
-      # Authenticate to Vault via GitLab JWT
-      VAULT_TOKEN=$(curl -svf --cacert /etc/ssl/certs/vault-root-ca.pem \
+      # Authenticate to Vault via GitLab id_token (GitLab 17+)
+      VAULT_TOKEN=$(curl -sf --cacert /etc/ssl/certs/vault-root-ca.pem \
         --request POST \
-        --data "{\"jwt\": \"${CI_JOB_JWT_V2}\", \"role\": \"gitlab-ci\"}" \
-        "${VAULT_ADDR}/v1/auth/jwt/gitlab/login" 2>&1 | tee /tmp/vault-auth.log | \
-        jq -r '.auth.client_token' 2>/dev/null || true)
+        --data "{\"jwt\": \"${VAULT_ID_TOKEN}\", \"role\": \"gitlab-ci\"}" \
+        "${VAULT_ADDR}/v1/auth/jwt/login" | \
+        jq -r '.auth.client_token')
 
       if [ -z "${VAULT_TOKEN}" ] || [ "${VAULT_TOKEN}" = "null" ]; then
         echo "ERROR: Failed to authenticate to Vault"
-        cat /tmp/vault-auth.log 2>/dev/null
         exit 1
       fi
 
