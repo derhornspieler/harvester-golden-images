@@ -10,6 +10,7 @@ stages:
   - build
   - tag
   - cleanup
+  - sync
 
 # Only run this pipeline when upstream-versions.json changes on main
 workflow:
@@ -262,3 +263,109 @@ cleanup-old-images:
       echo "Image cleanup — keeping last ${KEEP_COUNT} per type"
       echo "TODO: implement image retention policy"
       echo "This will use: ./build.sh list + ./build.sh delete"
+
+# -----------------------------------------------------------------------------
+# Stage: sync — Sanitized push to GitHub mirror (on push to main)
+# -----------------------------------------------------------------------------
+# Replaces PII (domain, usernames, org) with generic placeholders and removes
+# sensitive files before pushing to the public GitHub mirror.
+# All credentials fetched from Vault via JWT auth — no GitLab CI variables needed.
+# Vault path: kv/services/ci/github-mirror (mirror-url, ssh-private-key)
+sync-to-github:
+  stage: sync
+  image: docker.io/alpine:3.21
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: always
+  variables:
+    VAULT_ADDR: "https://vault.${CI_SERVER_HOST}"
+  before_script:
+    - apk add --no-cache git openssh-client python3 py3-pip curl jq
+    - pip install git-filter-repo --break-system-packages 2>/dev/null
+    - git config --global user.name "GitLab Mirror"
+    - git config --global user.email "mirror@ci.local"
+  script:
+    - |
+      # Authenticate to Vault via GitLab JWT
+      VAULT_TOKEN=$(curl -sf --cacert /etc/ssl/certs/vault-root-ca.pem \
+        --request POST \
+        --data "{\"jwt\": \"${CI_JOB_JWT_V2}\", \"role\": \"gitlab-ci\"}" \
+        "${VAULT_ADDR}/v1/auth/jwt/gitlab/login" | \
+        jq -r '.auth.client_token')
+
+      if [ -z "${VAULT_TOKEN}" ] || [ "${VAULT_TOKEN}" = "null" ]; then
+        echo "ERROR: Failed to authenticate to Vault"
+        exit 1
+      fi
+
+      # Fetch GitHub mirror credentials from Vault
+      GH_CREDS=$(curl -sf --cacert /etc/ssl/certs/vault-root-ca.pem \
+        -H "X-Vault-Token: ${VAULT_TOKEN}" \
+        "${VAULT_ADDR}/v1/kv/data/services/ci/github-mirror")
+
+      GITHUB_MIRROR_URL=$(echo "${GH_CREDS}" | jq -r '.data.data["mirror-url"]')
+      GH_SSH_KEY=$(echo "${GH_CREDS}" | jq -r '.data.data["ssh-private-key"]')
+
+      if [ -z "${GITHUB_MIRROR_URL}" ] || [ "${GITHUB_MIRROR_URL}" = "null" ]; then
+        echo "ERROR: GitHub mirror credentials not found in Vault (kv/services/ci/github-mirror)"
+        exit 1
+      fi
+
+      # Set up SSH for GitHub push
+      mkdir -p ~/.ssh
+      echo "${GH_SSH_KEY}" > ~/.ssh/id_ed25519
+      chmod 600 ~/.ssh/id_ed25519
+      ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+
+      WORK_DIR="/tmp/github-sanitize"
+      rm -rf "${WORK_DIR}"
+
+      # Clone the full repo
+      git clone --branch main "${CI_REPOSITORY_URL}" "${WORK_DIR}"
+      cd "${WORK_DIR}"
+
+      # Create PII replacement map
+      cat > /tmp/replacements.txt << 'REPLACEMENTS'
+      aegisgroup.ch==>example.com
+      Aegis Group Root CA==>Private Root CA
+      Aegis Group==>Example Org
+      aegis-root-ca==>private-ca
+      frank.jones==>dev.user
+      Frank Jones==>Senior Developer
+      alice.morgan==>admin.user
+      Alice Morgan==>Platform Admin
+      derhornspieler==>example-user
+      hvst-mgmt==>builder-mgmt
+      REPLACEMENTS
+
+      # Pass 1: Replace PII in file content + remove sensitive files
+      git filter-repo \
+        --replace-text /tmp/replacements.txt \
+        --path-glob 'shared/aegis-root-ca.pem' --invert-paths \
+        --path-glob 'scripts/github-sanitize.sh' --invert-paths \
+        --path-glob '.gitlab-ci.yml' --invert-paths \
+        --path-glob '.github-sanitize' --invert-paths \
+        --force
+
+      # Pass 2: Replace PII in commit messages
+      git filter-repo \
+        --message-callback '
+      msg = message
+      msg = msg.replace(b"aegisgroup.ch", b"example.com")
+      msg = msg.replace(b"Aegis Group Root CA", b"Private Root CA")
+      msg = msg.replace(b"Aegis Group", b"Example Org")
+      msg = msg.replace(b"aegis-root-ca", b"private-ca")
+      msg = msg.replace(b"frank.jones", b"dev.user")
+      msg = msg.replace(b"Frank Jones", b"Senior Developer")
+      msg = msg.replace(b"alice.morgan", b"admin.user")
+      msg = msg.replace(b"Alice Morgan", b"Platform Admin")
+      msg = msg.replace(b"derhornspieler", b"example-user")
+      msg = msg.replace(b"hvst-mgmt", b"builder-mgmt")
+      return msg
+      ' --force
+
+      # Force push sanitized history to GitHub
+      git remote add github "${GITHUB_MIRROR_URL}"
+      git push github main --force --tags
+      echo "Sanitized push to GitHub complete"
+  allow_failure: true
