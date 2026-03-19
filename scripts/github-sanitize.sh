@@ -141,7 +141,7 @@ return msg
 log_info "Verifying sanitization..."
 LEAKS=0
 for term in "aegisgroup" "Aegis Group" "frank.jones" "alice.morgan" "derhornspieler" "hvst-mgmt"; do
-  COUNT=$(grep -r "${term}" --include="*.yaml" --include="*.yml" --include="*.md" --include="*.sh" --include="*.json" --include="*.tf" --include="*.tpl" --include="*.toml" . 2>/dev/null | grep -v ".git/" | wc -l)
+  COUNT=$(grep -r "${term}" --include="*.yaml" --include="*.yml" --include="*.md" --include="*.sh" --include="*.json" --include="*.tf" --include="*.tpl" --include="*.toml" . 2>/dev/null | grep -v ".git/" | wc -l || true)
   if [[ ${COUNT} -gt 0 ]]; then
     log_warn "Found ${COUNT} remaining '${term}' references in files"
     LEAKS=$((LEAKS + COUNT))
