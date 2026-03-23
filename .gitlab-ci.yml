@@ -325,13 +325,16 @@ sync-to-github:
         -H "X-Vault-Token: ${VAULT_TOKEN}" \
         "${VAULT_ADDR}/v1/kv/data/services/ci/github-mirror")
 
-      GITHUB_MIRROR_URL=$(echo "${GH_CREDS}" | jq -r '.data.data["mirror-url"]')
-      GITHUB_REPO=$(echo "${GH_CREDS}" | jq -r '.data.data["mirror-repo"]')
-      GITHUB_API_TOKEN=$(echo "${GH_CREDS}" | jq -r '.data.data["api-token"]')
       GH_SSH_KEY=$(echo "${GH_CREDS}" | jq -r '.data.data["ssh-private-key"]')
+      GH_USER=$(echo "${GH_CREDS}" | jq -r '.data.data["github-user"] // "derhornspieler"')
+      GITHUB_API_TOKEN=$(echo "${GH_CREDS}" | jq -r '.data.data["api-token"]')
+      PROJECT_NAME=$(basename "${CI_PROJECT_PATH}")
+      GITHUB_MIRROR_URL="git@github.com:${GH_USER}/${PROJECT_NAME}.git"
+      GITHUB_REPO="${GH_USER}/${PROJECT_NAME}"
+      echo "GitHub mirror target: ${GITHUB_MIRROR_URL}"
 
-      if [ -z "${GITHUB_MIRROR_URL}" ] || [ "${GITHUB_MIRROR_URL}" = "null" ]; then
-        echo "ERROR: GitHub mirror credentials not found in Vault (kv/services/ci/github-mirror)"
+      if [ -z "${GH_SSH_KEY}" ] || [ "${GH_SSH_KEY}" = "null" ]; then
+        echo "ERROR: SSH key not found in Vault (kv/services/ci/github-mirror)"
         exit 1
       fi
 
