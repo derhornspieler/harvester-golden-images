@@ -292,12 +292,12 @@ sync-to-github:
   image: docker.io/alpine:3.21
   id_tokens:
     VAULT_ID_TOKEN:
-      aud: https://gitlab.${DOMAIN}
+      aud: https://gitlab.example.com
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: always
   variables:
-    VAULT_ADDR: "https://vault.${DOMAIN}"
+    VAULT_ADDR: "https://vault.example.com"
     GIT_SSL_CAINFO: /etc/ssl/certs/vault-root-ca.pem
     CURL_CA_BUNDLE: /etc/ssl/certs/vault-root-ca.pem
   before_script:
