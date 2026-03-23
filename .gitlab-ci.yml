@@ -368,6 +368,10 @@ sync-to-github:
         --path-glob 'scripts/github-sanitize.sh' --invert-paths \
         --path-glob '.gitlab-ci.yml' --invert-paths \
         --path-glob '.github-sanitize' --invert-paths \
+        --path-glob 'CLAUDE.md' --invert-paths \
+        --path-glob '.claude' --invert-paths \
+        --path-glob 'memory' --invert-paths \
+        --path-glob 'docs/plans' --invert-paths \
         --force
 
       # Pass 2: Replace PII in commit messages
