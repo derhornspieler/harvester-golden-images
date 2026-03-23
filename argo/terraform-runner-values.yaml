@@ -1,12 +1,12 @@
 # REFERENCE ONLY — Source of truth is in harvester-rke2-svcs:
-#   fleet-gitops/50-gitlab/runners/golden-image-runner-values.yaml
+#   fleet-gitops/50-gitlab/gitlab-runner-terraform/values.yaml
 #
-# Helm values for GitLab golden-image-builder runner
+# Helm values for GitLab terraform-runner
 # Chart: gitlab/gitlab-runner
 #
-# This runner executes golden image builds. The heavy lifting (virt-customize,
-# libguestfs) runs inside a Harvester utility VM — the runner only needs
-# Terraform + kubectl to orchestrate the build lifecycle.
+# This runner executes Terraform-based infrastructure builds (golden images,
+# etc.). The heavy lifting (virt-customize, libguestfs) runs inside a
+# Harvester utility VM — the runner only needs Terraform + kubectl.
 #
 # Runner pods need:
 #   - Harvester kubeconfig (mounted from secret)
@@ -26,14 +26,14 @@ runners:
   secret: gitlab-gitlab-runner-secret
   config: |
     [[runners]]
-      name = "golden-image-builder"
+      name = "terraform-runner"
       executor = "kubernetes"
       [runners.kubernetes]
         namespace = "gitlab-runners"
         image = "hashicorp/terraform:1.12"
         service_account = "gitlab-runner-sa"
         pull_policy = ["if-not-present"]
-        # Golden image builds take 30-60 minutes
+        # Terraform builds (golden images etc.) take 30-60 minutes
         poll_timeout = 7200
         [runners.kubernetes.node_selector]
           "workload-type" = "compute"
@@ -51,14 +51,14 @@ runners:
           "app.kubernetes.io/managed-by" = "gitlab-runner"
         # Install kubectl and jq before build (terraform image has curl)
         [runners.kubernetes.pod_annotations]
-          "golden-image-builder" = "true"
+          "terraform-runner" = "true"
       pre_build_script = """
         apk add --no-cache kubectl jq bash coreutils
         export KUBECONFIG=/etc/harvester/kubeconfig-harvester.yaml
       """
 
-  ## Tags — only jobs tagged with "golden-image-builder" run here
-  tags: "golden-image-builder"
+  ## Tags — only jobs tagged with "terraform-runner" run here
+  tags: "terraform-runner"
 
 ## Runner pod node selector
 nodeSelector:
