@@ -49,7 +49,7 @@ before_script:
 detect-changes:
   stage: detect
   tags:
-    - terraform-runner
+    - terraform
   script:
     - |
       set -euo pipefail
@@ -107,8 +107,8 @@ detect-changes:
 build-cis-rocky9:
   stage: build
   tags:
-    - terraform-runner
-  resource_group: terraform-runner
+    - terraform
+  resource_group: terraform
   needs:
     - job: detect-changes
       artifacts: true
@@ -135,8 +135,8 @@ build-cis-rocky9:
 build-cis-debian13:
   stage: build
   tags:
-    - terraform-runner
-  resource_group: terraform-runner
+    - terraform
+  resource_group: terraform
   needs:
     - job: detect-changes
       artifacts: true
@@ -164,8 +164,8 @@ build-cis-debian13:
 build-rke2:
   stage: build
   tags:
-    - terraform-runner
-  resource_group: terraform-runner
+    - terraform
+  resource_group: terraform
   needs:
     - job: detect-changes
       artifacts: true
@@ -197,7 +197,7 @@ build-rke2:
 tag-build:
   stage: tag
   tags:
-    - terraform-runner
+    - terraform
   when: always
   needs:
     - job: detect-changes
@@ -266,7 +266,7 @@ tag-build:
 cleanup-old-images:
   stage: cleanup
   tags:
-    - terraform-runner
+    - terraform
   when: manual
   allow_failure: true
   variables:

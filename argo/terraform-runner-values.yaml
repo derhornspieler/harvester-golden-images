@@ -26,7 +26,7 @@ runners:
   secret: gitlab-gitlab-runner-secret
   config: |
     [[runners]]
-      name = "terraform-runner"
+      name = "terraform"
       executor = "kubernetes"
       [runners.kubernetes]
         namespace = "gitlab-runners"
@@ -51,14 +51,14 @@ runners:
           "app.kubernetes.io/managed-by" = "gitlab-runner"
         # Install kubectl and jq before build (terraform image has curl)
         [runners.kubernetes.pod_annotations]
-          "terraform-runner" = "true"
+          "terraform" = "true"
       pre_build_script = """
         apk add --no-cache kubectl jq bash coreutils
         export KUBECONFIG=/etc/harvester/kubeconfig-harvester.yaml
       """
 
-  ## Tags — only jobs tagged with "terraform-runner" run here
-  tags: "terraform-runner"
+  ## Tags — only jobs tagged with "terraform" run here
+  tags: "terraform"
 
 ## Runner pod node selector
 nodeSelector:
