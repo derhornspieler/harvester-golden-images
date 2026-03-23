@@ -219,7 +219,8 @@ if [[ ${#changed_distros[@]} -eq 0 ]]; then
   exit 0
 fi
 
-commit_msg="chore: detected upstream $(IFS=', '; echo "${changed_distros[*]}")"
+distro_list=$(printf '%s, ' "${changed_distros[@]}")
+commit_msg="chore: detected upstream ${distro_list%, }"
 log_info "Changes detected. Committing: ${commit_msg}"
 
 git add upstream-versions.json
