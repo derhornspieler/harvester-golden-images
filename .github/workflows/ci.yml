@@ -10,6 +10,23 @@ permissions:
   contents: read
 
 jobs:
+  # -------------------------------------------------------------------
+  # Secret Scanning
+  # -------------------------------------------------------------------
+  gitleaks:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # -------------------------------------------------------------------
+  # Terraform Validate
+  # -------------------------------------------------------------------
   terraform-validate:
     name: Terraform Validate
     runs-on: ubuntu-latest
@@ -35,6 +52,9 @@ jobs:
         run: terraform validate
         working-directory: ${{ matrix.dir }}
 
+  # -------------------------------------------------------------------
+  # ShellCheck
+  # -------------------------------------------------------------------
   shellcheck:
     name: ShellCheck
     runs-on: ubuntu-latest
@@ -47,6 +67,9 @@ jobs:
           scandir: .
           severity: warning
 
+  # -------------------------------------------------------------------
+  # TFLint
+  # -------------------------------------------------------------------
   tflint:
     name: TFLint
     runs-on: ubuntu-latest
@@ -68,6 +91,9 @@ jobs:
         run: tflint
         working-directory: ${{ matrix.dir }}
 
+  # -------------------------------------------------------------------
+  # Security — Gitleaks + tfsec + Checkov
+  # -------------------------------------------------------------------
   security:
     name: Security Scan
     runs-on: ubuntu-latest
@@ -75,11 +101,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Gitleaks (secret detection)
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: tfsec (Terraform security)
         uses: aquasecurity/tfsec-action@v1.0.3
@@ -94,6 +115,9 @@ jobs:
           soft_fail: true
           framework: terraform
 
+  # -------------------------------------------------------------------
+  # Markdown Lint
+  # -------------------------------------------------------------------
   markdownlint:
     name: Markdown Lint
     runs-on: ubuntu-latest
@@ -105,6 +129,9 @@ jobs:
         with:
           globs: "**/*.md"
 
+  # -------------------------------------------------------------------
+  # YAML Lint
+  # -------------------------------------------------------------------
   yamllint:
     name: YAML Lint
     runs-on: ubuntu-latest
@@ -125,3 +152,42 @@ jobs:
               comments:
                 min-spaces-from-content: 1
               document-start: disable
+
+  # -------------------------------------------------------------------
+  # JSON Lint
+  # -------------------------------------------------------------------
+  jsonlint:
+    name: JSON Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JSON files
+        run: |
+          files=$(find . -name '*.json' -not -path './.git/*' | sort)
+          if [ -z "$files" ]; then
+            echo "No JSON files found"
+            exit 0
+          fi
+          echo "$files" | while read -r f; do
+            if ! python3 -m json.tool "$f" > /dev/null 2>&1; then
+              echo "INVALID: $f"
+              python3 -m json.tool "$f"
+              exit 1
+            fi
+          done
+          echo "All JSON files valid"
+
+  # -------------------------------------------------------------------
+  # SAST — Semgrep
+  # -------------------------------------------------------------------
+  semgrep:
+    name: SAST
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Semgrep scan
+        run: semgrep scan --config auto --error .
+        env:
+          SEMGREP_RULES: auto
