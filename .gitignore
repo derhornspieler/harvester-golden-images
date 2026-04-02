@@ -17,13 +17,8 @@ crash.log
 # Build artifacts
 **/reports/
 
-# Claude Code / AI
-.claude/
-CLAUDE.md
-memory/
-docs/superpowers/
-*.plan
-*.plan.md
+# Claude Code / AI — committed to GitLab, stripped from GitHub by sync-to-github
+# (no gitignore needed; sync job uses --invert-paths for these)
 
 # Environment (local dev secrets)
 .env
