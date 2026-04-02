@@ -1,12 +1,12 @@
 # =============================================================================
-# GitLab CI — Golden Image Automated Build Pipeline
+# GitLab CI — Golden Image Automated Build Pipeline (Example)
 # =============================================================================
+# Copy this file to .gitlab-ci.yml and configure the variables below.
 # Triggered when upstream-versions.json is updated (by Argo watcher).
-# Builds golden images with version-aware naming on a dedicated Rocky 9 runner.
+# Builds golden images with version-aware naming on a dedicated runner.
 # =============================================================================
 
 stages:
-  - validate
   - detect
   - build
   - tag
@@ -15,22 +15,17 @@ stages:
 
 workflow:
   rules:
-    # MR pipelines — validate + dev build + cleanup
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    # Push to main — full production pipeline
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
-    # Manual trigger (web UI or API)
     - if: $CI_PIPELINE_SOURCE == "web"
     - if: $CI_PIPELINE_SOURCE == "trigger"
     - if: $CI_PIPELINE_SOURCE == "api"
 
-# Terraform variables for Harvester builds
-# NOTE: Domain-specific URLs (proxy-cache, mirrors) are set as GitLab CI/CD
-# project variables, not hardcoded here. Required project variables:
+# Required GitLab CI/CD project variables:
 #   PROXY_CACHE_DL_URL    — Cloud image download proxy (e.g., https://dl.example.com)
 #   PROXY_CACHE_YUM_URL   — RPM repo proxy (e.g., https://yum.example.com)
 #   PROXY_CACHE_APT_URL   — APT repo proxy (e.g., https://apt.example.com)
 #   CI_GIT_EMAIL          — Email for CI git commits (e.g., ci@example.com)
+#   DOMAIN                — Your org domain (e.g., example.com) — group-level variable
 variables:
   TF_VAR_vm_namespace: "default"
   TF_VAR_harvester_kubeconfig_path: "/etc/harvester/kubeconfig-harvester.yaml"
@@ -46,54 +41,10 @@ before_script:
   - chmod +x /usr/local/bin/kubectl
 
 # -----------------------------------------------------------------------------
-# Stage: validate — Terraform + template sanity checks (MR + main)
-# -----------------------------------------------------------------------------
-validate-cis:
-  stage: validate
-  tags:
-    - terraform
-  script:
-    - |
-      set -euo pipefail
-      cd cis
-      terraform init -backend=false
-      terraform validate
-      terraform fmt -check -recursive
-      echo "CIS Terraform validation passed"
-
-validate-rke2:
-  stage: validate
-  tags:
-    - terraform
-  script:
-    - |
-      set -euo pipefail
-      cd rke2
-      terraform init -backend=false
-      terraform validate
-      terraform fmt -check -recursive
-      echo "RKE2 Terraform validation passed"
-
-# -----------------------------------------------------------------------------
-# Stage: build (dev) — Test build on MR pipelines with dev- prefix
-# -----------------------------------------------------------------------------
-# Dev builds use a dev- prefix so they're easily identifiable and cleanable.
-# Only one distro (Rocky 9 CIS) is built to save time — enough to validate
-# the full Terraform + cloud-init + image-import pipeline.
-
-.prod-only:
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: never
-    - when: on_success
-
-
-# -----------------------------------------------------------------------------
 # Stage: detect — Diff upstream-versions.json to find which distros changed
 # -----------------------------------------------------------------------------
 detect-changes:
   stage: detect
-  extends: .prod-only
   tags:
     - terraform
   script:
@@ -103,13 +54,11 @@ detect-changes:
       IMAGE_DATE=$(date +%Y%m%d)
       echo "IMAGE_DATE=${IMAGE_DATE}" >> detect.env
 
-      # Read current version info
       ROCKY_VERSION=$(jq -r '.rocky9.version // ""' upstream-versions.json)
       DEBIAN13_VERSION=$(jq -r '.debian13.version // ""' upstream-versions.json)
       echo "ROCKY_VERSION=${ROCKY_VERSION}" >> detect.env
       echo "DEBIAN13_VERSION=${DEBIAN13_VERSION}" >> detect.env
 
-      # Determine what actually changed by comparing JSON fields with previous commit
       BUILD_ROCKY9="false"
       BUILD_DEBIAN13="false"
 
@@ -147,12 +96,11 @@ detect-changes:
 # -----------------------------------------------------------------------------
 # Stage: build — Run golden image builds (conditional via script check)
 # -----------------------------------------------------------------------------
-# Note: Build jobs use script-level checks instead of rules:if for dotenv
-# variables, since rules:if evaluates before dotenv artifacts are loaded.
+# Build jobs use script-level checks instead of rules:if for dotenv variables,
+# since rules:if evaluates before dotenv artifacts are loaded.
 
 build-cis-rocky9:
   stage: build
-  extends: .prod-only
   tags:
     - terraform
   resource_group: terraform
@@ -175,13 +123,13 @@ build-cis-rocky9:
         echo "Image ${IMAGE_NAME_OVERRIDE} already exists in Harvester — skipping build"
         exit 0
       fi
-      export TF_VAR_private_ca_pem="$(cat shared/private-ca.pem)"
+      # Optional: inject private CA for proxy-cache TLS
+      # export TF_VAR_private_ca_pem="$(cat shared/your-ca.pem)"
       echo "Building CIS Rocky 9 as: ${IMAGE_NAME_OVERRIDE}"
       ./build.sh build cis-rocky9
 
 build-cis-debian13:
   stage: build
-  extends: .prod-only
   tags:
     - terraform
   resource_group: terraform
@@ -205,13 +153,13 @@ build-cis-debian13:
         echo "Image ${IMAGE_NAME_OVERRIDE} already exists in Harvester — skipping build"
         exit 0
       fi
-      export TF_VAR_private_ca_pem="$(cat shared/private-ca.pem)"
+      # Optional: inject private CA for proxy-cache TLS
+      # export TF_VAR_private_ca_pem="$(cat shared/your-ca.pem)"
       echo "Building CIS Debian 13 as: ${IMAGE_NAME_OVERRIDE}"
       ./build.sh build cis-debian13
 
 build-rke2:
   stage: build
-  extends: .prod-only
   tags:
     - terraform
   resource_group: terraform
@@ -236,7 +184,8 @@ build-rke2:
         echo "Image ${IMAGE_NAME_OVERRIDE} already exists in Harvester — skipping build"
         exit 0
       fi
-      export TF_VAR_private_ca_pem="$(cat shared/private-ca.pem)"
+      # Optional: inject private CA for proxy-cache TLS
+      # export TF_VAR_private_ca_pem="$(cat shared/your-ca.pem)"
       echo "Building RKE2 Rocky 9 as: ${IMAGE_NAME_OVERRIDE}"
       ./build.sh build rke2
 
@@ -245,12 +194,9 @@ build-rke2:
 # -----------------------------------------------------------------------------
 tag-build:
   stage: tag
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: never
-    - when: always
   tags:
     - terraform
+  when: always
   needs:
     - job: detect-changes
       artifacts: true
@@ -267,14 +213,12 @@ tag-build:
       KUBECTL="kubectl --kubeconfig=${TF_VAR_harvester_kubeconfig_path}"
       NS="${TF_VAR_vm_namespace}"
 
-      # Use CI job token for push via HTTPS
       git remote set-url origin "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
       git config user.name "GitLab CI"
       git config user.email "${CI_GIT_EMAIL:-ci@localhost}"
 
       TAGGED=0
 
-      # Only tag builds whose images actually exist in Harvester
       if [ "${BUILD_ROCKY9}" = "true" ]; then
         CIS_IMAGE="rocky-${ROCKY_VERSION}-cis-${IMAGE_DATE}"
         RKE2_IMAGE="rocky-${ROCKY_VERSION}-rke2-${IMAGE_DATE}"
@@ -317,12 +261,9 @@ tag-build:
 # -----------------------------------------------------------------------------
 cleanup-old-images:
   stage: cleanup
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: never
-    - when: manual
   tags:
     - terraform
+  when: manual
   allow_failure: true
   variables:
     KEEP_COUNT: "3"
@@ -334,17 +275,25 @@ cleanup-old-images:
       echo "This will use: ./build.sh list + ./build.sh delete"
 
 # -----------------------------------------------------------------------------
-# Stage: sync — Sanitized push to GitHub mirror (on push to main)
+# Stage: sync — Push sanitized mirror to external Git host (optional)
 # -----------------------------------------------------------------------------
-# Uses git-filter-repo to preserve commit history while scrubbing PII.
-# All credentials fetched from Vault via JWT auth — no GitLab CI variables needed.
-# Vault path: kv/services/ci/github-mirror (github-user, api-token, ssh-private-key)
-sync-to-github:
+# This example uses git-filter-repo to preserve commit history while scrubbing
+# PII (domains, usernames, org names) before pushing to a public mirror.
+# Credentials are fetched from Vault via JWT auth at runtime.
+#
+# Prerequisites:
+#   - Vault KV secret at kv/services/ci/github-mirror with keys:
+#       github-user     — GitHub username or org
+#       ssh-private-key — Deploy key with push access to the mirror repo
+#       api-token       — GitHub PAT for checking Actions status (optional)
+#   - GitLab id_tokens configured for Vault JWT auth
+#   - Runner with 'shared' tag (does not need Harvester kubeconfig)
+sync-to-mirror:
   stage: sync
   needs: []
   tags:
     - shared
-  image: docker.io/alpine@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659 # 3.23
+  image: docker.io/alpine:3.23
   id_tokens:
     VAULT_ID_TOKEN:
       aud: https://gitlab.example.com
@@ -355,6 +304,7 @@ sync-to-github:
     VAULT_ADDR: "https://vault.example.com"
   before_script:
     - apk add --no-cache git openssh-client python3 py3-pip curl jq ca-certificates
+    # If using a private CA, install it into the system trust store
     - |
       if [ -f /etc/ssl/certs/vault-root-ca.pem ]; then
         cp /etc/ssl/certs/vault-root-ca.pem /usr/local/share/ca-certificates/vault-root-ca.crt
@@ -367,7 +317,7 @@ sync-to-github:
     - |
       set -euo pipefail
 
-      # Authenticate to Vault via GitLab id_token (GitLab 17+)
+      # --- Vault authentication (GitLab 17+ id_tokens) ---
       VAULT_TOKEN=$(curl -sf \
         --cacert /etc/ssl/certs/vault-root-ca.pem \
         --request POST \
@@ -381,43 +331,43 @@ sync-to-github:
       fi
       echo "Vault auth successful"
 
-      # Fetch GitHub mirror credentials from Vault
+      # --- Fetch mirror credentials from Vault ---
       GH_CREDS=$(curl -sf \
         --cacert /etc/ssl/certs/vault-root-ca.pem \
         -H "X-Vault-Token: ${VAULT_TOKEN}" \
         "${VAULT_ADDR}/v1/kv/data/services/ci/github-mirror")
 
       GH_SSH_KEY=$(echo "${GH_CREDS}" | jq -r '.data.data["ssh-private-key"]')
-      GH_USER=$(echo "${GH_CREDS}" | jq -r '.data.data["github-user"] // "derhornspieler"')
+      GH_USER=$(echo "${GH_CREDS}" | jq -r '.data.data["github-user"]')
       GITHUB_API_TOKEN=$(echo "${GH_CREDS}" | jq -r '.data.data["api-token"]')
       PROJECT_NAME=$(basename "${CI_PROJECT_PATH}")
-      GITHUB_MIRROR_URL="git@github.com:${GH_USER}/${PROJECT_NAME}.git"
-      GITHUB_REPO="${GH_USER}/${PROJECT_NAME}"
-      echo "GitHub mirror target: ${GITHUB_REPO}"
+      MIRROR_URL="git@github.com:${GH_USER}/${PROJECT_NAME}.git"
+      MIRROR_REPO="${GH_USER}/${PROJECT_NAME}"
+      echo "Mirror target: ${MIRROR_REPO}"
 
       if [ -z "${GH_SSH_KEY}" ] || [ "${GH_SSH_KEY}" = "null" ]; then
-        echo "ERROR: SSH key not found in Vault (kv/services/ci/github-mirror)"
+        echo "ERROR: SSH key not found in Vault"
         exit 1
       fi
 
-      # Set up SSH for GitHub push
+      # --- Set up SSH ---
       mkdir -p ~/.ssh
       echo "${GH_SSH_KEY}" > ~/.ssh/id_ed25519
       chmod 600 ~/.ssh/id_ed25519
       ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
 
-      # --- git-filter-repo approach (preserves commit history) ---
-      WORK_DIR="/tmp/github-sanitize"
+      # --- Clone and sanitize with git-filter-repo ---
+      WORK_DIR="/tmp/mirror-sanitize"
       rm -rf "${WORK_DIR}"
       git clone --branch main "${CI_REPOSITORY_URL}" "${WORK_DIR}"
       cd "${WORK_DIR}"
 
-      # Strip sync-to-github job from .gitlab-ci.yml
+      # Strip this sync job from .gitlab-ci.yml before pushing
       python3 - .gitlab-ci.yml << 'STRIP_SYNC'
       import sys, re
       lines = open(sys.argv[1]).read().split('\n')
       lines = [l for l in lines if l.strip() != '- sync']
-      idx = next((i for i,l in enumerate(lines) if l.startswith('sync-to-github:')), None)
+      idx = next((i for i,l in enumerate(lines) if l.startswith('sync-to-mirror:')), None)
       if idx is not None:
           d = idx
           for i in range(idx-1, max(idx-15,-1), -1):
@@ -425,7 +375,7 @@ sync-to-github:
               else: break
           while d > 0 and lines[d-1].strip() == '': d -= 1
           lines = lines[:d]
-      pat = re.compile(r'sync-to-github|[Ss]yncs?\s+to\s+[Gg]it[Hh]ub|[Ss]anitized\s+push|github-mirror|github.sanitize|[Rr]emoves?\s+PII|sensitive\s+configs?\s+before\s+pushing', re.I)
+      pat = re.compile(r'sync-to-mirror|[Ss]yncs?\s+to\s+|[Ss]anitized\s+push|mirror|github.sanitize|[Rr]emoves?\s+PII|sensitive\s+configs?\s+before\s+pushing', re.I)
       out, i = [], 0
       while i < len(lines):
           if lines[i].strip().startswith('#') and pat.search(lines[i]):
@@ -441,50 +391,36 @@ sync-to-github:
       open(sys.argv[1],'w').write('\n'.join(out))
       STRIP_SYNC
       git add .gitlab-ci.yml
-      git commit -m "ci: strip sync-to-github for public mirror" --allow-empty 2>/dev/null || true
+      git commit -m "ci: strip sync job for public mirror" --allow-empty 2>/dev/null || true
 
-      # Create PII replacement map
+      # Define PII replacements (customize for your org)
       cat > /tmp/replacements.txt << 'REPLACEMENTS'
-      example.com==>example.com
-      Private Root CA==>Private Root CA
-      Example Org==>Example Org
-      private-ca==>private-ca
-      admin.user==>admin.user
-      Platform Admin==>Platform Admin
-      dev.user==>dev.user
-      Senior Developer==>Senior Developer
+      internal.example.com==>example.com
+      Your Org Name==>Example Org
       REPLACEMENTS
 
-      # Pass 1: Replace PII in file content + remove sensitive files
+      # Pass 1: Replace PII in file content + remove sensitive paths
       git filter-repo \
         --replace-text /tmp/replacements.txt \
         --path-glob 'CLAUDE.md' --invert-paths \
         --path-glob '.claude' --invert-paths \
         --path-glob 'memory' --invert-paths \
         --path-glob 'docs/plans' --invert-paths \
-        --path-glob 'docs/superpowers' --invert-paths \
-        --path-glob 'shared/private-ca.pem' --invert-paths \
-        --path-glob 'scripts/github-sanitize.sh' --invert-paths \
-        --path-glob '.github-sanitize' --invert-paths \
+        --path-glob 'shared/*.pem' --invert-paths \
         --force
 
       # Pass 2: Replace PII in commit messages
       git filter-repo \
         --message-callback '
       msg = message
-      msg = msg.replace(b"example.com", b"example.com")
-      msg = msg.replace(b"Example Org", b"Example Org")
-      msg = msg.replace(b"private-ca", b"private-ca")
-      msg = msg.replace(b"admin.user", b"admin.user")
-      msg = msg.replace(b"Platform Admin", b"Platform Admin")
-      msg = msg.replace(b"dev.user", b"dev.user")
-      msg = msg.replace(b"Senior Developer", b"Senior Developer")
+      msg = msg.replace(b"internal.example.com", b"example.com")
+      msg = msg.replace(b"Your Org Name", b"Example Org")
       return msg
       ' --force
 
-      # Verify sanitization — scan all text files for PII leaks
+      # Verify sanitization
       LEAKS=0
-      for term in "aegisgroup" "Example Org" "admin.user" "dev.user" "private-ca"; do
+      for term in "internal.example.com" "Your Org Name"; do
         COUNT=$(grep -r "${term}" . --binary-files=without-match 2>/dev/null | grep -v ".git/" | wc -l || true)
         if [ "${COUNT}" -gt 0 ]; then
           echo "WARNING: Found ${COUNT} remaining '${term}' references"
@@ -493,38 +429,30 @@ sync-to-github:
         fi
       done
 
-      MSG_LEAKS=$(git log --oneline 2>/dev/null | grep -ciE "aegisgroup|alice\.morgan|frank\.jones" || true)
-      if [ "${MSG_LEAKS}" -gt 0 ]; then
-        echo "WARNING: Found ${MSG_LEAKS} commit messages with PII"
-        LEAKS=$((LEAKS + MSG_LEAKS))
-      fi
-
       if [ "${LEAKS}" -gt 0 ]; then
         echo "ERROR: Sanitization incomplete — ${LEAKS} leaks found"
         exit 1
       fi
-      echo "Sanitization verified — zero PII in files or commit messages"
+      echo "Sanitization verified — zero PII leaks"
 
-      # Force push sanitized history to GitHub
-      git remote add github "${GITHUB_MIRROR_URL}"
-      git push github main --force --tags
-      echo "Sanitized push to GitHub complete"
+      # --- Push to mirror ---
+      git remote add mirror "${MIRROR_URL}"
+      git push mirror main --force --tags
+      echo "Sanitized push to mirror complete"
 
-      # Wait for GitHub Actions CI to trigger and complete
+      # --- Verify mirror CI (optional, requires api-token) ---
       if [ -z "${GITHUB_API_TOKEN:-}" ] || [ "${GITHUB_API_TOKEN}" = "null" ]; then
-        echo "GITHUB_API_TOKEN not set — skipping CI status check"
+        echo "API token not set — skipping CI status check"
         exit 0
       fi
 
-      # Unset private CA bundle for GitHub API calls (uses public CA)
       unset CURL_CA_BUNDLE 2>/dev/null || true
-      GH_API="https://api.github.com/repos/${GITHUB_REPO}"
+      GH_API="https://api.github.com/repos/${MIRROR_REPO}"
       GH_AUTH="Authorization: token ${GITHUB_API_TOKEN}"
 
-      echo "Waiting for GitHub Actions to start..."
+      echo "Waiting for mirror CI to start..."
       sleep 15
 
-      # Poll for latest workflow run on main
       MAX_WAIT=300
       ELAPSED=0
       RUN_ID=""
@@ -542,7 +470,7 @@ sync-to-github:
           if [ "${STATUS}" = "completed" ]; then
             break
           fi
-          echo "GitHub CI: ${STATUS} (${ELAPSED}/${MAX_WAIT}s)..."
+          echo "Mirror CI: ${STATUS} (${ELAPSED}/${MAX_WAIT}s)..."
         fi
 
         sleep 15
@@ -550,18 +478,18 @@ sync-to-github:
       done
 
       if [ -z "${RUN_ID}" ]; then
-        echo "WARNING: Could not find GitHub Actions run — no workflow configured?"
+        echo "WARNING: Could not find mirror CI run — no workflow configured?"
         exit 0
       fi
 
       if [ "${CONCLUSION}" = "success" ]; then
-        echo "GitHub CI passed (run ${RUN_ID})"
+        echo "Mirror CI passed (run ${RUN_ID})"
       elif [ "${CONCLUSION}" = "null" ] || [ "${STATUS}" != "completed" ]; then
-        echo "WARNING: GitHub CI did not complete within ${MAX_WAIT}s (status: ${STATUS})"
+        echo "WARNING: Mirror CI did not complete within ${MAX_WAIT}s (status: ${STATUS})"
         exit 1
       else
-        echo "ERROR: GitHub CI failed (run ${RUN_ID}, conclusion: ${CONCLUSION})"
-        echo "See: https://github.com/${GITHUB_REPO}/actions/runs/${RUN_ID}"
+        echo "ERROR: Mirror CI failed (run ${RUN_ID}, conclusion: ${CONCLUSION})"
+        echo "See: https://github.com/${MIRROR_REPO}/actions/runs/${RUN_ID}"
         exit 1
       fi
   allow_failure: true
