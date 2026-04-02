@@ -104,10 +104,17 @@ dev-plan-cis:
     - |
       set -euo pipefail
       cd cis
-      terraform init -backend=false
 
-      # Use placeholder URLs for plan — protected CI variables aren't
-      # available on MR pipelines from non-protected branches
+      # Override kubernetes backend with local for plan-only (no cluster access on MR)
+      cat > backend_override.tf << 'HCL'
+      terraform {
+        backend "local" {}
+      }
+      HCL
+      terraform init -reconfigure
+
+      # Use placeholder URLs — protected CI variables aren't available
+      # on MR pipelines from non-protected branches
       export TF_VAR_cloud_image_url="https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
       export TF_VAR_builder_image_url="https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
       export TF_VAR_repo_mirror_url="https://yum.example.com"
@@ -131,7 +138,13 @@ dev-plan-rke2:
     - |
       set -euo pipefail
       cd rke2
-      terraform init -backend=false
+
+      cat > backend_override.tf << 'HCL'
+      terraform {
+        backend "local" {}
+      }
+      HCL
+      terraform init -reconfigure
 
       export TF_VAR_rocky_image_url="https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
       export TF_VAR_rocky_repo_url="https://yum.example.com"
