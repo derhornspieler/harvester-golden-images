@@ -81,80 +81,12 @@ validate-rke2:
 # Only one distro (Rocky 9 CIS) is built to save time — enough to validate
 # the full Terraform + cloud-init + image-import pipeline.
 
-.dev-only:
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-
 .prod-only:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: never
     - when: on_success
 
-dev-plan-cis:
-  stage: build
-  extends: .dev-only
-  tags:
-    - terraform
-  needs:
-    - job: validate-cis
-    - job: validate-rke2
-  timeout: 10m
-  script:
-    - |
-      set -euo pipefail
-      cd cis
-
-      # Override kubernetes backend with local for plan-only (no cluster access on MR)
-      cat > backend_override.tf << 'HCL'
-      terraform {
-        backend "local" {}
-      }
-      HCL
-      terraform init -reconfigure
-
-      # Use placeholder URLs — protected CI variables aren't available
-      # on MR pipelines from non-protected branches
-      export TF_VAR_cloud_image_url="https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
-      export TF_VAR_builder_image_url="https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
-      export TF_VAR_repo_mirror_url="https://yum.example.com"
-      export TF_VAR_private_ca_pem="placeholder"
-      export TF_VAR_harvester_kubeconfig_path="/dev/null"
-      export IMAGE_NAME_OVERRIDE="dev-rocky-cis-plan"
-
-      terraform plan -input=false
-      echo "CIS terraform plan succeeded"
-
-dev-plan-rke2:
-  stage: build
-  extends: .dev-only
-  tags:
-    - terraform
-  needs:
-    - job: validate-cis
-    - job: validate-rke2
-  timeout: 10m
-  script:
-    - |
-      set -euo pipefail
-      cd rke2
-
-      cat > backend_override.tf << 'HCL'
-      terraform {
-        backend "local" {}
-      }
-      HCL
-      terraform init -reconfigure
-
-      export TF_VAR_rocky_image_url="https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
-      export TF_VAR_rocky_repo_url="https://yum.example.com"
-      export TF_VAR_rke2_repo_url="https://yum.example.com/rke2/latest"
-      export TF_VAR_private_ca_pem="placeholder"
-      export TF_VAR_harvester_kubeconfig_path="/dev/null"
-      export IMAGE_NAME_OVERRIDE="dev-rocky-rke2-plan"
-
-      terraform plan -input=false
-      echo "RKE2 terraform plan succeeded"
 
 # -----------------------------------------------------------------------------
 # Stage: detect — Diff upstream-versions.json to find which distros changed
