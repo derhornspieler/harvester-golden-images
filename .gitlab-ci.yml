@@ -91,86 +91,57 @@ validate-rke2:
       when: never
     - when: on_success
 
-dev-build-cis-rocky9:
+dev-plan-cis:
   stage: build
   extends: .dev-only
   tags:
     - terraform
-  resource_group: terraform
   needs:
     - job: validate-cis
     - job: validate-rke2
-  timeout: 120m
-  variables:
-    TF_VAR_cloud_image_url: "${PROXY_CACHE_DL_URL}/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+  timeout: 10m
   script:
     - |
       set -euo pipefail
-      IMAGE_DATE=$(date +%Y%m%d)
-      export IMAGE_NAME_OVERRIDE="dev-rocky-cis-mr${CI_MERGE_REQUEST_IID}-${IMAGE_DATE}"
-      echo "DEV_IMAGE_NAME=${IMAGE_NAME_OVERRIDE}" >> dev-build.env
-      KUBECTL="kubectl --kubeconfig=${TF_VAR_harvester_kubeconfig_path}"
-      if $KUBECTL get virtualmachineimages.harvesterhci.io "${IMAGE_NAME_OVERRIDE}" -n "${TF_VAR_vm_namespace}" &>/dev/null; then
-        echo "Dev image ${IMAGE_NAME_OVERRIDE} already exists — skipping"
-        exit 0
-      fi
-      export TF_VAR_private_ca_pem="$(cat shared/private-ca.pem)"
-      echo "Dev build: CIS Rocky 9 as ${IMAGE_NAME_OVERRIDE}"
-      ./build.sh build cis-rocky9
-  artifacts:
-    reports:
-      dotenv: dev-build.env
+      cd cis
+      terraform init -backend=false
 
-# Always clean up dev images regardless of build outcome
-cleanup-dev-images:
-  stage: cleanup
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: always
+      # Use placeholder URLs for plan — protected CI variables aren't
+      # available on MR pipelines from non-protected branches
+      export TF_VAR_cloud_image_url="https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+      export TF_VAR_builder_image_url="https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+      export TF_VAR_repo_mirror_url="https://yum.example.com"
+      export TF_VAR_private_ca_pem="placeholder"
+      export TF_VAR_harvester_kubeconfig_path="/dev/null"
+      export IMAGE_NAME_OVERRIDE="dev-rocky-cis-plan"
+
+      terraform plan -input=false
+      echo "CIS terraform plan succeeded"
+
+dev-plan-rke2:
+  stage: build
+  extends: .dev-only
   tags:
     - terraform
   needs:
-    - job: dev-build-cis-rocky9
-      artifacts: true
+    - job: validate-cis
+    - job: validate-rke2
+  timeout: 10m
   script:
     - |
       set -euo pipefail
-      KUBECTL="kubectl --kubeconfig=${TF_VAR_harvester_kubeconfig_path}"
-      NS="${TF_VAR_vm_namespace}"
+      cd rke2
+      terraform init -backend=false
 
-      echo "Cleaning up dev images for MR !${CI_MERGE_REQUEST_IID}..."
+      export TF_VAR_rocky_image_url="https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+      export TF_VAR_rocky_repo_url="https://yum.example.com"
+      export TF_VAR_rke2_repo_url="https://yum.example.com/rke2/latest"
+      export TF_VAR_private_ca_pem="placeholder"
+      export TF_VAR_harvester_kubeconfig_path="/dev/null"
+      export IMAGE_NAME_OVERRIDE="dev-rocky-rke2-plan"
 
-      # Delete the specific dev image if it exists
-      if [ -n "${DEV_IMAGE_NAME:-}" ]; then
-        if $KUBECTL get virtualmachineimages.harvesterhci.io "${DEV_IMAGE_NAME}" -n "$NS" &>/dev/null; then
-          $KUBECTL delete virtualmachineimages.harvesterhci.io "${DEV_IMAGE_NAME}" -n "$NS"
-          echo "Deleted dev image: ${DEV_IMAGE_NAME}"
-        else
-          echo "Dev image ${DEV_IMAGE_NAME} not found (build may have failed before import)"
-        fi
-      fi
-
-      # Safety net: clean up any lingering dev- images for this MR
-      STALE=$($KUBECTL get virtualmachineimages.harvesterhci.io -n "$NS" \
-        -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | \
-        grep "^dev-.*-mr${CI_MERGE_REQUEST_IID}-" || true)
-      if [ -n "$STALE" ]; then
-        echo "Cleaning stale dev images:"
-        echo "$STALE" | while read -r img; do
-          $KUBECTL delete virtualmachineimages.harvesterhci.io "$img" -n "$NS" || true
-          echo "  Deleted: $img"
-        done
-      fi
-
-      # Also destroy any leftover builder VMs from this pipeline
-      cd cis
-      if [ -f terraform.tfstate ] || [ -d .terraform ]; then
-        terraform init -backend=false 2>/dev/null || true
-        terraform destroy -auto-approve 2>/dev/null || true
-        echo "Builder VM cleaned up"
-      fi
-
-      echo "Dev cleanup complete"
+      terraform plan -input=false
+      echo "RKE2 terraform plan succeeded"
 
 # -----------------------------------------------------------------------------
 # Stage: detect — Diff upstream-versions.json to find which distros changed
