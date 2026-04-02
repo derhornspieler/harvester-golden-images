@@ -6,18 +6,20 @@
 # =============================================================================
 
 stages:
+  - validate
   - detect
   - build
   - tag
   - cleanup
   - sync
 
-# Run on any push to main (sync-to-github needs this; build jobs skip
-# themselves via script-level checks when upstream-versions.json is unchanged)
 workflow:
   rules:
+    # MR pipelines — validate + dev build + cleanup
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    # Push to main — full production pipeline
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"
-    # Allow manual trigger (web UI or API)
+    # Manual trigger (web UI or API)
     - if: $CI_PIPELINE_SOURCE == "web"
     - if: $CI_PIPELINE_SOURCE == "trigger"
     - if: $CI_PIPELINE_SOURCE == "api"
@@ -44,10 +46,138 @@ before_script:
   - chmod +x /usr/local/bin/kubectl
 
 # -----------------------------------------------------------------------------
+# Stage: validate — Terraform + template sanity checks (MR + main)
+# -----------------------------------------------------------------------------
+validate-cis:
+  stage: validate
+  tags:
+    - terraform
+  script:
+    - |
+      set -euo pipefail
+      cd cis
+      terraform init -backend=false
+      terraform validate
+      terraform fmt -check -recursive
+      echo "CIS Terraform validation passed"
+
+validate-rke2:
+  stage: validate
+  tags:
+    - terraform
+  script:
+    - |
+      set -euo pipefail
+      cd rke2
+      terraform init -backend=false
+      terraform validate
+      terraform fmt -check -recursive
+      echo "RKE2 Terraform validation passed"
+
+# -----------------------------------------------------------------------------
+# Stage: build (dev) — Test build on MR pipelines with dev- prefix
+# -----------------------------------------------------------------------------
+# Dev builds use a dev- prefix so they're easily identifiable and cleanable.
+# Only one distro (Rocky 9 CIS) is built to save time — enough to validate
+# the full Terraform + cloud-init + image-import pipeline.
+
+.dev-only:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+.prod-only:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+    - when: on_success
+
+dev-build-cis-rocky9:
+  stage: build
+  extends: .dev-only
+  tags:
+    - terraform
+  resource_group: terraform
+  needs:
+    - job: validate-cis
+    - job: validate-rke2
+  timeout: 120m
+  variables:
+    TF_VAR_cloud_image_url: "${PROXY_CACHE_DL_URL}/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+  script:
+    - |
+      set -euo pipefail
+      IMAGE_DATE=$(date +%Y%m%d)
+      export IMAGE_NAME_OVERRIDE="dev-rocky-cis-mr${CI_MERGE_REQUEST_IID}-${IMAGE_DATE}"
+      echo "DEV_IMAGE_NAME=${IMAGE_NAME_OVERRIDE}" >> dev-build.env
+      KUBECTL="kubectl --kubeconfig=${TF_VAR_harvester_kubeconfig_path}"
+      if $KUBECTL get virtualmachineimages.harvesterhci.io "${IMAGE_NAME_OVERRIDE}" -n "${TF_VAR_vm_namespace}" &>/dev/null; then
+        echo "Dev image ${IMAGE_NAME_OVERRIDE} already exists — skipping"
+        exit 0
+      fi
+      export TF_VAR_private_ca_pem="$(cat shared/private-ca.pem)"
+      echo "Dev build: CIS Rocky 9 as ${IMAGE_NAME_OVERRIDE}"
+      ./build.sh build cis-rocky9
+  artifacts:
+    reports:
+      dotenv: dev-build.env
+
+# Always clean up dev images regardless of build outcome
+cleanup-dev-images:
+  stage: cleanup
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: always
+  tags:
+    - terraform
+  needs:
+    - job: dev-build-cis-rocky9
+      artifacts: true
+  script:
+    - |
+      set -euo pipefail
+      KUBECTL="kubectl --kubeconfig=${TF_VAR_harvester_kubeconfig_path}"
+      NS="${TF_VAR_vm_namespace}"
+
+      echo "Cleaning up dev images for MR !${CI_MERGE_REQUEST_IID}..."
+
+      # Delete the specific dev image if it exists
+      if [ -n "${DEV_IMAGE_NAME:-}" ]; then
+        if $KUBECTL get virtualmachineimages.harvesterhci.io "${DEV_IMAGE_NAME}" -n "$NS" &>/dev/null; then
+          $KUBECTL delete virtualmachineimages.harvesterhci.io "${DEV_IMAGE_NAME}" -n "$NS"
+          echo "Deleted dev image: ${DEV_IMAGE_NAME}"
+        else
+          echo "Dev image ${DEV_IMAGE_NAME} not found (build may have failed before import)"
+        fi
+      fi
+
+      # Safety net: clean up any lingering dev- images for this MR
+      STALE=$($KUBECTL get virtualmachineimages.harvesterhci.io -n "$NS" \
+        -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | \
+        grep "^dev-.*-mr${CI_MERGE_REQUEST_IID}-" || true)
+      if [ -n "$STALE" ]; then
+        echo "Cleaning stale dev images:"
+        echo "$STALE" | while read -r img; do
+          $KUBECTL delete virtualmachineimages.harvesterhci.io "$img" -n "$NS" || true
+          echo "  Deleted: $img"
+        done
+      fi
+
+      # Also destroy any leftover builder VMs from this pipeline
+      cd cis
+      if [ -f terraform.tfstate ] || [ -d .terraform ]; then
+        terraform init -backend=false 2>/dev/null || true
+        terraform destroy -auto-approve 2>/dev/null || true
+        echo "Builder VM cleaned up"
+      fi
+
+      echo "Dev cleanup complete"
+
+# -----------------------------------------------------------------------------
 # Stage: detect — Diff upstream-versions.json to find which distros changed
 # -----------------------------------------------------------------------------
 detect-changes:
   stage: detect
+  extends: .prod-only
   tags:
     - terraform
   script:
@@ -106,6 +236,7 @@ detect-changes:
 
 build-cis-rocky9:
   stage: build
+  extends: .prod-only
   tags:
     - terraform
   resource_group: terraform
@@ -134,6 +265,7 @@ build-cis-rocky9:
 
 build-cis-debian13:
   stage: build
+  extends: .prod-only
   tags:
     - terraform
   resource_group: terraform
@@ -163,6 +295,7 @@ build-cis-debian13:
 
 build-rke2:
   stage: build
+  extends: .prod-only
   tags:
     - terraform
   resource_group: terraform
@@ -196,9 +329,12 @@ build-rke2:
 # -----------------------------------------------------------------------------
 tag-build:
   stage: tag
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+    - when: always
   tags:
     - terraform
-  when: always
   needs:
     - job: detect-changes
       artifacts: true
@@ -265,9 +401,12 @@ tag-build:
 # -----------------------------------------------------------------------------
 cleanup-old-images:
   stage: cleanup
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+    - when: manual
   tags:
     - terraform
-  when: manual
   allow_failure: true
   variables:
     KEEP_COUNT: "3"
