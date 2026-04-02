@@ -25,7 +25,7 @@ spec:
     templates:
       - name: check-upstream
         container:
-          image: alpine/git:2.43.0
+          image: alpine/git@sha256:76fdb7210689fc26c6ff101c4adacf9d12d3d25a919a7d8ff42ebaef5bedba65 # 2.43.0
           command: ["/bin/sh", "-c"]
           args:
             - |

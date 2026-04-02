@@ -65,7 +65,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: setup
-          image: docker.io/alpine/k8s:1.32.4
+          image: docker.io/alpine/k8s@sha256:7e1e7d5b7a9617646650d1bec4422c88cf279fab34d9e1f772391bc7478595d4 # 1.32.4
           command: ["/bin/bash", "-euo", "pipefail", "-c"]
           args:
             - |
