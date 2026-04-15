@@ -96,6 +96,8 @@ Copy the appropriate `.tfvars.example` file and fill in your values:
 | `cis_tailoring_file` | Optional XCCDF tailoring file for CIS exceptions | `""` |
 | `cloud_image_url` | Override cloud image URL (empty = upstream default) | `""` |
 | `repo_mirror_url` | Package repo proxy-cache URL (empty = upstream) | `""` |
+| `epel_repo_url` | Full EPEL 9 baseurl (optional — EPEL is often hosted separately). Falls back to `<repo_mirror_url>/epel/9/Everything/x86_64`, then public Fedora EPEL | `""` |
+| `ntp_servers` | NTP servers baked into chrony config (optional — required for airgapped networks). Empty list uses distro defaults (`pool.ntp.org`) | `[]` |
 | `private_ca_pem` | PEM CA cert for private mirror TLS trust | `""` |
 | `builder_image_url` | Override builder VM image URL (must be Rocky 9) | `""` |
 | `builder_cpu` | Builder VM vCPUs | `4` |

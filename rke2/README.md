@@ -111,6 +111,8 @@ Copy `terraform.tfvars.example` to `terraform.tfvars` and configure these variab
 | `rocky_image_url` | URL to Rocky 9 GenericCloud qcow2 (proxy-cache) | `https://yum.example.com/rocky/9/images/Rocky-9-GenericCloud-Base.qcow2` |
 | `rocky_repo_url` | Base URL for Rocky 9 repos (proxy-cache) | `https://yum.example.com` |
 | `rke2_repo_url` | Base URL for RKE2 repos (proxy-cache) | `https://yum.example.com/rke2/latest` |
+| `epel_repo_url` | Full EPEL 9 baseurl (optional — EPEL is often hosted separately). Falls back to `<rocky_repo_url>/epel/9/Everything/x86_64`, then public Fedora EPEL | `https://epel.example.com/epel/9/Everything/x86_64` |
+| `ntp_servers` | NTP servers baked into chrony config (optional — required for airgapped networks without public NTP reachability). Empty list uses distro defaults (`pool.ntp.org`) | `["ntp1.internal.example.com"]` |
 | `private_ca_pem` | PEM-encoded CA certificate chain for TLS trust | (see below) |
 | `builder_cpu` | vCPUs for utility VM (more = faster dnf) | `4` (default) |
 | `builder_memory` | RAM for utility VM | `4Gi` (default) |

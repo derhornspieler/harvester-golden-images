@@ -25,6 +25,12 @@ rocky_image_url = "https://dl.example.com/rocky/9/images/x86_64/Rocky-9-GenericC
 # --- Package Repositories (proxy-cache or private mirror) ---
 rocky_repo_url = "https://yum.example.com"
 rke2_repo_url  = "https://yum.example.com/rke2/latest"
+# EPEL is often hosted separately from the main yum proxy. If empty, falls back to
+# <rocky_repo_url>/epel/9/Everything/x86_64.
+# epel_repo_url = "https://epel.example.com/epel/9/Everything/x86_64"
+
+# --- NTP servers (optional — required for airgapped networks without pool.ntp.org reachability) ---
+# ntp_servers = ["ntp1.internal.example.com", "ntp2.internal.example.com"]
 
 # --- TLS CA (required — PEM-encoded cert chain for proxy-cache/mirror) ---
 private_ca_pem = <<-EOT

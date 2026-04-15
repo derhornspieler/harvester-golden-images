@@ -36,9 +36,15 @@ cis_type  = "server"   # server | workstation
 
 # --- Package mirror (leave empty to use upstream repos) ---
 # repo_mirror_url = "https://yum.example.com"
+# EPEL is often hosted separately from the main yum proxy. If empty, falls back to
+# <repo_mirror_url>/epel/9/Everything/x86_64.
+# epel_repo_url = "https://epel.example.com/epel/9/Everything/x86_64"
 
 # --- Debug ---
 # ssh_authorized_keys = ["ssh-ed25519 AAAA... user@host"]
+
+# --- NTP servers (optional — required for airgapped networks without pool.ntp.org reachability) ---
+# ntp_servers = ["ntp1.internal.example.com", "ntp2.internal.example.com"]
 
 # --- TLS CA (required if using private mirror with self-signed certs) ---
 # private_ca_pem = <<-EOT

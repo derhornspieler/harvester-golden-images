@@ -29,6 +29,7 @@ workflow:
 # project variables, not hardcoded here. Required project variables:
 #   PROXY_CACHE_DL_URL    — Cloud image download proxy (e.g., https://dl.example.com)
 #   PROXY_CACHE_YUM_URL   — RPM repo proxy (e.g., https://yum.example.com)
+#   PROXY_CACHE_EPEL_URL  — EPEL 9 full baseurl (e.g., https://epel.example.com/epel/9/Everything/x86_64)
 #   PROXY_CACHE_APT_URL   — APT repo proxy (e.g., https://apt.example.com)
 #   CI_GIT_EMAIL          — Email for CI git commits (e.g., ci@example.com)
 variables:
@@ -38,6 +39,7 @@ variables:
   TF_VAR_harvester_network_namespace: "default"
   TF_VAR_builder_image_url: "${PROXY_CACHE_DL_URL}/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
   TF_VAR_repo_mirror_url: "${PROXY_CACHE_YUM_URL}"
+  TF_VAR_epel_repo_url: "${PROXY_CACHE_EPEL_URL}"
 
 # Install tools missing from hashicorp/terraform Alpine image
 before_script:
@@ -223,6 +225,7 @@ build-rke2:
     TF_VAR_rocky_image_url: "${PROXY_CACHE_DL_URL}/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
     TF_VAR_rocky_repo_url: "${PROXY_CACHE_YUM_URL}"
     TF_VAR_rke2_repo_url: "${PROXY_CACHE_YUM_URL}/rke2/latest"
+    TF_VAR_epel_repo_url: "${PROXY_CACHE_EPEL_URL}"
   script:
     - |
       set -euo pipefail

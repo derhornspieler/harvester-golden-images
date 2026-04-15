@@ -32,6 +32,8 @@ resource "kubernetes_secret" "cloudinit" {
       private_ca_pem      = var.private_ca_pem
       rocky_repo_url      = var.rocky_repo_url
       rke2_repo_url       = var.rke2_repo_url
+      epel_repo_url       = var.epel_repo_url != "" ? var.epel_repo_url : (var.rocky_repo_url != "" ? "${var.rocky_repo_url}/epel/9/Everything/x86_64" : "https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64")
+      ntp_servers         = var.ntp_servers
     })
   }
 }

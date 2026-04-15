@@ -58,6 +58,17 @@ variable "repo_mirror_url" {
   }
 }
 
+variable "epel_repo_url" {
+  description = "Full base URL for EPEL 9 (e.g., https://epel.example.com/epel/9/Everything/x86_64). If empty, falls back to <repo_mirror_url>/epel/9/Everything/x86_64."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.epel_repo_url == "" || can(regex("^https?://", var.epel_repo_url))
+    error_message = "epel_repo_url must be a valid HTTP(S) URL or empty."
+  }
+}
+
 variable "private_ca_pem" {
   description = "PEM-encoded CA certificate chain for repo/registry TLS trust. Empty string disables CA injection."
   type        = string
@@ -144,6 +155,12 @@ variable "image_name_override" {
 
 variable "ssh_authorized_keys" {
   description = "SSH keys for utility VM (debug access, NOT baked into golden image)"
+  type        = list(string)
+  default     = []
+}
+
+variable "ntp_servers" {
+  description = "NTP servers to bake into the golden image chrony config. Required for airgapped networks without public NTP reachability. Empty list leaves distro defaults (pool.ntp.org)."
   type        = list(string)
   default     = []
 }
