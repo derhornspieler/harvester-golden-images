@@ -32,11 +32,13 @@ resource "kubernetes_secret" "cloudinit" {
       private_ca_pem      = var.private_ca_pem
       has_private_ca      = local.has_private_ca
       repo_mirror_url     = var.repo_mirror_url
+      epel_repo_url       = var.epel_repo_url != "" ? var.epel_repo_url : (var.repo_mirror_url != "" ? "${var.repo_mirror_url}/epel/9/Everything/x86_64" : "")
       cis_profile_id      = local.cis_profile_id
       cis_tailoring_file  = var.cis_tailoring_file
       distro              = var.distro
       distro_config       = local.distro_config
       image_name_prefix   = local.image_name_prefix
+      ntp_servers         = var.ntp_servers
     })
   }
 }

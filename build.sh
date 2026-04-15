@@ -29,6 +29,7 @@ set -euo pipefail
 #   IMAGE_NAME_OVERRIDE    Full image name (e.g., rocky-9.7-cis-20260310)
 #   PROXY_CACHE_DL_URL     Cloud image download proxy (e.g., https://dl.example.com)
 #   PROXY_CACHE_YUM_URL    RPM repo proxy (e.g., https://yum.example.com)
+#   PROXY_CACHE_EPEL_URL   EPEL 9 full baseurl (e.g., https://epel.example.com/epel/9/Everything/x86_64)
 #   PROXY_CACHE_APT_URL    APT repo proxy (e.g., https://apt.example.com)
 #
 # For local development, copy .env.example to .env and fill in your values.

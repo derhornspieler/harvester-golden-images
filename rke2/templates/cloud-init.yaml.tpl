@@ -51,7 +51,7 @@ write_files:
   content: |
     [epel]
     name=Extra Packages for Enterprise Linux 9
-    baseurl=${rocky_repo_url}/epel/9/Everything/x86_64
+    baseurl=${epel_repo_url}
     enabled=1
     gpgcheck=0
 
@@ -76,6 +76,19 @@ write_files:
 # -------------------------------------------------------------------------
 # Config files to bake into the golden image
 # -------------------------------------------------------------------------
+%{ if length(ntp_servers) > 0 ~}
+- path: /tmp/bake/chrony.conf
+  permissions: '0644'
+  content: |
+%{ for s in ntp_servers ~}
+    server ${s} iburst
+%{ endfor ~}
+    driftfile /var/lib/chrony/drift
+    makestep 1.0 3
+    rtcsync
+    logdir /var/log/chrony
+%{ endif ~}
+
 - path: /tmp/bake/virtio.conf
   permissions: '0644'
   content: |
@@ -233,7 +246,7 @@ write_files:
       --copy-in /tmp/bake/virtio.conf:/etc/dracut.conf.d/ \
       --update \
       --run /tmp/bake/fix-grub.sh \
-      --install qemu-guest-agent,iptables,iptables-services,container-selinux,policycoreutils-python-utils,audit \
+      --install qemu-guest-agent,chrony,iptables,iptables-services,container-selinux,policycoreutils-python-utils,audit \
       --run-command 'dnf install -y rke2-selinux' \
       --copy-in /tmp/bake/iptables:/etc/sysconfig/ \
       --run-command 'chmod 0600 /etc/sysconfig/iptables' \
@@ -243,6 +256,10 @@ write_files:
       --run-command 'chmod 0755 /etc/NetworkManager/dispatcher.d/10-ingress-routing' \
       --run-command 'mkdir -p /var/lib/rancher/rke2/server/manifests' \
       --run-command 'systemctl enable qemu-guest-agent.service' \
+      --run-command 'systemctl enable chronyd.service' \
+%{ if length(ntp_servers) > 0 ~}
+      --copy-in /tmp/bake/chrony.conf:/etc/ \
+%{ endif ~}
       --run-command 'systemctl disable firewalld || true' \
       --run-command 'systemctl enable iptables' \
       --run-command 'restorecon -R /etc/NetworkManager/dispatcher.d/ || true' \

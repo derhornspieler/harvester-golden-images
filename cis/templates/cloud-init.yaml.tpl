@@ -59,7 +59,7 @@ write_files:
   content: |
     [epel]
     name=Extra Packages for Enterprise Linux 9
-    baseurl=${repo_mirror_url}/epel/9/Everything/x86_64
+    baseurl=${epel_repo_url}
     enabled=1
     gpgcheck=0
 %{ endif ~}
@@ -103,6 +103,19 @@ write_files:
 # -------------------------------------------------------------------------
 # Config files to bake into the golden image
 # -------------------------------------------------------------------------
+%{ if length(ntp_servers) > 0 ~}
+- path: /tmp/bake/chrony.conf
+  permissions: '0644'
+  content: |
+%{ for s in ntp_servers ~}
+    server ${s} iburst
+%{ endfor ~}
+    driftfile /var/lib/chrony/drift
+    makestep 1.0 3
+    rtcsync
+    logdir /var/log/chrony
+%{ endif ~}
+
 - path: /tmp/bake/virtio.conf
   permissions: '0644'
   content: |
@@ -352,7 +365,7 @@ write_files:
     VCMD+=(--update)
     VCMD+=(--run /tmp/bake/fix-grub.sh)
     VCMD+=(
-      --install "qemu-guest-agent,${distro_config.firewall_pkg},${distro_config.extra_packages}"
+      --install "qemu-guest-agent,chrony,${distro_config.firewall_pkg},${distro_config.extra_packages}"
       --install "${distro_config.ssg_package},${distro_config.oscap_package}"
     )
 %{ else ~}
@@ -361,7 +374,7 @@ write_files:
     VCMD+=(
       --run-command '/usr/bin/apt-get update'
       --run-command 'DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get -y dist-upgrade'
-      --run-command 'DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y qemu-guest-agent ${distro_config.firewall_pkg} ${replace(distro_config.extra_packages, ",", " ")} ${distro_config.ssg_package} ${distro_config.oscap_package}'
+      --run-command 'DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get install -y qemu-guest-agent chrony ${distro_config.firewall_pkg} ${replace(distro_config.extra_packages, ",", " ")} ${distro_config.ssg_package} ${distro_config.oscap_package}'
     )
 %{ if has_private_ca ~}
     # Now that ca-certificates is installed, update the trust store
@@ -398,6 +411,22 @@ write_files:
       --run-command '${distro_config.enable_firewall}'
       --run-command 'systemctl enable auditd || true'
     )
+
+    # --- NTP / chrony ---
+%{ if distro_config.family == "rhel" ~}
+    VCMD+=(--run-command 'systemctl enable chronyd.service')
+%{ if length(ntp_servers) > 0 ~}
+    VCMD+=(--copy-in /tmp/bake/chrony.conf:/etc/)
+%{ endif ~}
+%{ else ~}
+    VCMD+=(--run-command 'systemctl enable chrony.service || systemctl enable chronyd.service || true')
+%{ if length(ntp_servers) > 0 ~}
+    VCMD+=(
+      --mkdir /etc/chrony
+      --copy-in /tmp/bake/chrony.conf:/etc/chrony/
+    )
+%{ endif ~}
+%{ endif ~}
 
     # --- Dracut rebuild (RHEL-family only) ---
 %{ if distro_config.family == "rhel" ~}
